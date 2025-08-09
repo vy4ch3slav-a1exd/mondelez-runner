@@ -332,11 +332,20 @@ btnMute.onclick = ()=>{ if(SFX.enabled){ SFX.disable(); btnMute.textContent='З�
 btnPause.onclick = ()=> togglePause();
 btnRestart.onclick = ()=> restartGame();
 
-function togglePause(){ if(state==='RUN'){ state='PAUSE'; showOverlay('ПАУЗА'); } else if(state==='PAUSE'){ hideOverlay(); state='RUN'; lastTime=performance.now(); } }
 
-startBtn.addEventListener('click', ()=>{ titleCard.style.display='none'; startCountdown(); });
-startBtn.addEventListener('pointerup', ()=>{});
-startBtn.addEventListener('touchend', ()=>{});
+function beginFromTitle(e){
+  if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){} }
+  if(state!=='TITLE') return;
+  titleCard.style.display='none';
+  if(!SFX.enabled){ SFX.enable(); btnMute.textContent='Звук: вкл'; }
+  startCountdown();
+}
+startBtn.addEventListener('click', beginFromTitle, {passive:false});
+startBtn.addEventListener('pointerdown', beginFromTitle, {passive:false});
+startBtn.addEventListener('touchstart', beginFromTitle, {passive:false});
+window.addEventListener('keydown', (e)=>{
+  if(state==='TITLE' && (e.code==='Enter' || e.code==='Space')) beginFromTitle(e);
+});
 
 // Toasts
 function showToast(text, kind='info'){
