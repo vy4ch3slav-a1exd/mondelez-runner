@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mondelez Runner — 3D ULTRA</title>
+<title>Mondelez Runner — 3D ULTIMATE</title>
 <meta name="theme-color" content="#0b0b12">
 <style>
-  :root { --bg:#0b0b12; --ui:#ffffff; --accent:#7a4bd4; --mint:#00ff95; --blue:#2b7bd4; }
+  :root { --bg:#060712; --ui:#ffffff; --accent:#7a4bd4; --mint:#00ff95; --blue:#2b7bd4; }
   * { box-sizing: border-box; }
   html, body { margin:0; height:100%; background:var(--bg); overflow:hidden; }
   #hud { position:fixed; inset:0; pointer-events:none; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial; }
@@ -20,7 +20,7 @@
            color:#d9d9ff; padding:10px 14px; border:1px solid rgba(122,75,212,.6); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; white-space:nowrap; }
   .toast.show { opacity:1; transform:translate(-50%, -8px); }
   .banner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-  .card { pointer-events:auto; max-width:min(820px, 94vw); background:rgba(255,255,255,.97); border:3px solid var(--accent); border-radius:18px; padding:18px 20px; color:#2b225a; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.35); }
+  .card { pointer-events:auto; max-width:min(860px, 94vw); background:rgba(255,255,255,.97); border:3px solid var(--accent); border-radius:18px; padding:18px 20px; color:#2b225a; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.35); }
   .hidden { display:none; }
   .dev { font-family: ui-monospace, Menlo, Consolas, monospace; color:var(--mint); text-shadow:0 0 8px rgba(0,255,149,.35); font-size:clamp(13px,2.2vw,18px); margin:6px 0 12px; }
   .start-title { font-size: clamp(22px, 4vw, 36px); margin: 6px 0 8px; }
@@ -29,6 +29,7 @@
   .btnlg { pointer-events:auto; border:none; border-radius:12px; padding:12px 20px; background:#2b225a; color:#fff; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.3); }
   .countdown { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); color:#fff; font-weight:900; font-size:12vh; text-shadow:0 10px 50px rgba(0,0,0,.35); pointer-events:none; }
   .touchhint { position:absolute; left:50%; bottom:24px; transform:translateX(-50%); color:#9fd; background:rgba(0,0,0,.35); padding:6px 10px; border-radius:10px; font:12px/1.2 ui-monospace, Menlo, Consolas, monospace; }
+  .badge { position:absolute; right:12px; bottom:12px; color:#9ff; background:rgba(0,0,0,.35); padding:6px 10px; border-radius:10px; font:11px/1.2 ui-monospace, Menlo, Consolas, monospace; opacity:.7; }
 </style>
 </head>
 <body>
@@ -46,333 +47,379 @@
   <div class="toast" id="toast">Текст</div>
   <div class="countdown hidden" id="count">3</div>
   <div class="touchhint" id="hint">Тап — прыжок, второй тап — двойной прыжок</div>
+  <div class="badge">3D • Bloom • Afterimage • FMCG Easter Eggs</div>
 
   <div class="banner" id="startBanner" aria-modal="true" role="dialog">
     <div class="card">
       <div style="font-size:42px;margin-bottom:6px;">🍪⚡🛒</div>
-      <h1 class="start-title">Mondelez Runner — 3D ULTRA</h1>
+      <h1 class="start-title">Mondelez Runner — 3D ULTIMATE</h1>
       <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
-      <div class="mini">Собирай крошки, уворачивайся от OOS/ERP, лови «препак» (щит) и «допскидку» (ускорение). Двойной прыжок: второй тап — в воздухе. Есть «coyote time» и «jump buffer» — прыжок ощущается как в больших играх.</div>
+      <div class="mini">AAA-виброс мозга: неон-трек, HDR свет, bloom, motion trail. Собирай крошки, уворачивайся от OOS/ERP, щит «препак» и ускорение «допскидка». Двойной прыжок с «coyote time» и «jump buffer» — как в топ-платформерах.</div>
       <div class="start-actions"><button class="btnlg" id="startBtn">START</button></div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
-<script>
-(function(){
-  'use strict';
-  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
+<!-- Three + PostProcessing from CDN (ES modules) -->
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js';
+import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { AfterimagePass } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/AfterimagePass.js';
 
-  // THREE setup
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  document.body.prepend(renderer.domElement);
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0b12);
+// Renderer
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.prepend(renderer.domElement);
 
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
-  camera.position.set(0, 2.1, 6);
+// Scene & Camera
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060712);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 200);
+camera.position.set(0, 2.1, 6);
 
-  // Lights
-  const hemi = new THREE.HemisphereLight(0x88bbff, 0x403020, 0.8);
-  const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-  dir.position.set(4,6,3);
-  dir.castShadow = true;
-  dir.shadow.mapSize.set(1024,1024);
-  scene.add(hemi, dir);
+// Postprocessing
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.75, 0.8, 0.85);
+composer.addPass(bloom);
+const afterimage = new AfterimagePass();
+afterimage.uniforms['damp'].value = 0.85;
+composer.addPass(afterimage);
 
-  // Ground (endless stripes)
-  const groundGeo = new THREE.PlaneGeometry(40, 200, 1, 1);
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x2a2740, metalness:0.1, roughness:0.8 });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI/2;
-  ground.position.z = -60;
-  ground.receiveShadow = true;
-  scene.add(ground);
+// Lights
+const hemi = new THREE.HemisphereLight(0x88bbff, 0x403020, 0.9);
+const dir = new THREE.DirectionalLight(0xffffff, 1.4);
+dir.position.set(4,6,3);
+dir.castShadow = true;
+dir.shadow.mapSize.set(1024,1024);
+scene.add(hemi, dir);
 
-  // Sky gradient
-  const skyGeo = new THREE.SphereGeometry(60, 32, 16);
-  const skyMat = new THREE.MeshBasicMaterial({ color: 0x111527, side: THREE.BackSide });
-  const sky = new THREE.Mesh(skyGeo, skyMat);
-  scene.add(sky);
+// Starfield / skybox aura
+const stars = new THREE.Points(
+  new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(Array.from({length:6000},()=> (Math.random()-0.5)*80),3)),
+  new THREE.PointsMaterial({ size: 0.04, color: 0x99aaff })
+);
+scene.add(stars);
 
-  // Oreo player (double biscuit with cream)
-  function createOreo(){
-    const g1 = new THREE.CylinderGeometry(0.45,0.45,0.18, 48);
-    const g2 = new THREE.CylinderGeometry(0.43,0.43,0.08, 48);
-    const matBrown = new THREE.MeshStandardMaterial({ color: 0x3b2f2f, metalness:0.3, roughness:0.6 });
-    const matCream = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness:0.05, roughness:0.4 });
-    const top = new THREE.Mesh(g1, matBrown);
-    const bot = new THREE.Mesh(g1, matBrown);
-    const cream = new THREE.Mesh(g2, matCream);
-    top.castShadow=bot.castShadow=cream.castShadow=true;
-    top.position.y = 0.13; bot.position.y = -0.13; cream.position.y = 0;
-    const group = new THREE.Group();
-    group.add(top, bot, cream);
+// Neon road
+const roadGeo = new THREE.PlaneGeometry(10, 400, 1, 1);
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1630, metalness:0.4, roughness:0.6 });
+const road = new THREE.Mesh(roadGeo, roadMat);
+road.rotation.x = -Math.PI/2;
+road.position.z = -120;
+road.receiveShadow = true;
+scene.add(road);
+// Side neon rails
+function neonRail(x, color){
+  const g=new THREE.CylinderGeometry(0.04,0.04,400,12);
+  const m=new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2 });
+  const rail=new THREE.Mesh(g,m); rail.rotation.z=Math.PI/2; rail.position.set(x,0.3,-120); scene.add(rail);
+}
+neonRail(-1.8, 0x7a4bd4); neonRail(1.8, 0x2b7bd4);
 
-    // Eyes
-    const eyeGeo = new THREE.SphereGeometry(0.035, 16, 12);
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness:0.2, roughness:0.3 });
-    const e1 = new THREE.Mesh(eyeGeo, eyeMat);
-    const e2 = new THREE.Mesh(eyeGeo, eyeMat);
-    e1.position.set(-0.12, 0.06, 0.44);
-    e2.position.set( 0.12, 0.06, 0.44);
-    group.add(e1,e2);
+// Oreo
+function createOreo(){
+  const g1 = new THREE.CylinderGeometry(0.50,0.50,0.18, 64);
+  const g2 = new THREE.CylinderGeometry(0.47,0.47,0.08, 48);
+  const matBrown = new THREE.MeshStandardMaterial({ color: 0x3b2f2f, metalness:0.35, roughness:0.55 });
+  const matCream = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness:0.05, roughness:0.35, emissive:0x111111, emissiveIntensity:0.05 });
+  const top = new THREE.Mesh(g1, matBrown);
+  const bot = new THREE.Mesh(g1, matBrown);
+  const cream = new THREE.Mesh(g2, matCream);
+  top.castShadow=bot.castShadow=cream.castShadow=true;
+  top.position.y = 0.13; bot.position.y = -0.13; cream.position.y = 0;
+  const group = new THREE.Group();
+  group.add(top, bot, cream);
+  // Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.035, 16, 12);
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness:0.2, roughness:0.3, emissive:0x000000 });
+  const e1 = new THREE.Mesh(eyeGeo, eyeMat);
+  const e2 = new THREE.Mesh(eyeGeo, eyeMat);
+  e1.position.set(-0.12, 0.06, 0.48);
+  e2.position.set( 0.12, 0.06, 0.48);
+  group.add(e1,e2);
+  // Cream pattern bumps
+  for(let i=0;i<24;i++){ const a=i/24*Math.PI*2; const s=new THREE.Mesh(new THREE.SphereGeometry(0.02,10,8), matBrown); s.position.set(Math.cos(a)*0.28, 0.0, Math.sin(a)*0.28); group.add(s); }
+  group.traverse(o=>o.castShadow=true);
+  return group;
+}
+const player = createOreo();
+player.position.set(0, 0.65, 0);
+scene.add(player);
 
-    group.traverse(o=>o.castShadow=true);
-    return group;
+// Obstacles & goodies
+const obstacles=[], goodies=[], crumbs=[];
+function spawnObstacle(){
+  const type = Math.random()<0.5? 'cube' : (Math.random()<0.5?'fall':'wall');
+  let mesh;
+  if(type==='cube'){
+    const s = 0.55 + Math.random()*0.32;
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xff4b6e, emissive:0x441122, emissiveIntensity:0.3 }));
+    mesh.userData.label = 'OOS';
+    mesh.position.set((Math.random()*2-1)*1.4, 0.28, -60);
+  }else if(type==='fall'){
+    const s = 0.48 + Math.random()*0.32;
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xe8a36b, emissive:0x442200, emissiveIntensity:0.25 }));
+    mesh.userData.fall = true;
+    mesh.userData.vy = 0.03 + Math.random()*0.02;
+    mesh.position.set((Math.random()*2-1)*1.4, 3 + Math.random()*1.5, -60);
+    mesh.userData.label = 'Нет стока';
+  }else{
+    const w = 0.8 + Math.random()*0.5;
+    const h = 0.35 + Math.random()*0.2;
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.6), new THREE.MeshStandardMaterial({ color: 0xffb84b, emissive:0x332200, emissiveIntensity:0.25 }));
+    mesh.position.set((Math.random()*2-1)*1.4, h/2, -60);
+    mesh.userData.label = 'ERP упал';
+  }
+  mesh.castShadow = true;
+  obstacles.push(mesh); scene.add(mesh);
+}
+function spawnGoodie(){
+  const r = Math.random();
+  const type = r<0.5 ? 'discount' : (r<0.8 ? 'prepack':'erid');
+  let color = type==='discount' ? 0x2b7bd4 : (type==='prepack' ? 0x00d6ff : 0x7a4bd4);
+  const mesh = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.07, 16, 24), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.2 }));
+  mesh.position.set((Math.random()*2-1)*1.4, 0.9 + Math.random()*0.9, -58);
+  mesh.castShadow=true; mesh.userData.type=type;
+  goodies.push(mesh); scene.add(mesh);
+}
+function spawnCrumbs(){
+  const n = 6 + Math.floor(Math.random()*4);
+  for(let i=0;i<n;i++){
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), new THREE.MeshStandardMaterial({ color: 0x6d3b2a }));
+    s.position.set((Math.random()*2-1)*1.6, 0.7 + Math.sin(i/n*Math.PI)*0.5, -56 - i*0.9);
+    s.castShadow=true; crumbs.push(s); scene.add(s);
+  }
+}
+
+// Boss ERP (final level)
+let boss=null, bossHP=5;
+function spawnBoss(){
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.4,1,0.8), new THREE.MeshStandardMaterial({ color:0x222, metalness:0.6, roughness:0.4, emissive:0x330000, emissiveIntensity:0.4 }));
+  const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.12,0.06), new THREE.MeshStandardMaterial({ color:0xff3344, emissive:0xff3344, emissiveIntensity:1.4 }));
+  const eyeR = eyeL.clone();
+  eyeL.position.set(-0.3,0.18,0.45); eyeR.position.set(0.3,0.18,0.45);
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.08,0.05), new THREE.MeshStandardMaterial({ color:0xff3344, emissive:0xff3344, emissiveIntensity:1.2 }));
+  mouth.position.set(0,-0.2,0.43);
+  boss = new THREE.Group(); boss.add(body, eyeL, eyeR, mouth);
+  boss.position.set(0, 0.7, -58);
+  boss.userData.vx = 0.03;
+  scene.add(boss); bossHP=7;
+}
+
+// Gameplay
+const SPEED_UP = 1.06;
+const levels=[
+  { name:'Склад РЦ', seconds:22, speed:0.25*SPEED_UP },
+  { name:'Магазин', seconds:26, speed:0.28*SPEED_UP },
+  { name:'Босс: ERP', seconds:40, speed:0.30*SPEED_UP, boss:true }
+];
+let levelIdx=0, timeLeft=levels[0].seconds, speed=levels[0].speed, t=0;
+let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
+
+// HUD refs
+const hud={
+  level: document.getElementById('levelLabel'),
+  score: document.getElementById('scoreLabel'),
+  best: document.getElementById('bestLabel'),
+  status: document.getElementById('statusLabel'),
+  toast: document.getElementById('toast'),
+  count: document.getElementById('count'),
+  start: document.getElementById('startBanner'),
+  startBtn: document.getElementById('startBtn'),
+  pauseBtn: document.getElementById('pauseBtn'),
+  restartBtn: document.getElementById('restartBtn'),
+  hint: document.getElementById('hint')
+};
+function toast(msg){ hud.toast.textContent=msg; hud.toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>hud.toast.classList.remove('show'), 2200); }
+
+// Physics & jump
+let vy = 0;
+const G = 0.018;
+let groundY = 0.65;
+let jumps=0, onGround=true;
+let coyoteTimer=0, jumpBufferTimer=0;
+const COYOTE=0.14, BUFFER=0.16;
+function requestJump(){ jumpBufferTimer = BUFFER; tryPerformJump(); }
+function tryPerformJump(){
+  if((onGround || coyoteTimer>0) && jumps===0){
+    vy = 0.38; jumps=1; onGround=false; coyoteTimer=0; jumpBufferTimer=0; return;
+  }
+  if(!onGround && jumps===1){
+    vy = 0.36; jumps=2; jumpBufferTimer=0; return;
+  }
+}
+
+// Timers
+let spawnT=0.3, goodieT=0.8, crumbT=0.25;
+
+// Boosters
+let boostTimer=0, shieldTimer=0, speedBoost=1.0;
+
+// Loop
+let last=performance.now(), running=false, paused=false;
+function loop(){
+  const now=performance.now(); const dt=Math.min(0.05, (now-last)/1000); last=now;
+  if(running && !paused) update(dt);
+  composer.render();
+  requestAnimationFrame(loop);
+}
+loop();
+
+function update(dt){
+  t += dt; timeLeft -= dt;
+  if(timeLeft<=0){
+    levelIdx++;
+    if(levelIdx>=levels.length){ win(); return; }
+    levelUp(levelIdx);
+  }
+  speed = levels[levelIdx].speed + Math.min(0.08, Math.floor(t/12)*0.012);
+  // Move track
+  road.position.z += speed*160*dt; if(road.position.z>-20) road.position.z = -120;
+  stars.rotation.y += dt*0.02;
+
+  // Spawns
+  spawnT-=dt; if(spawnT<=0 && !levels[levelIdx].boss){ spawnObstacle(); spawnT= 0.7 + Math.random()*0.8; }
+  goodieT-=dt; if(goodieT<=0){ spawnGoodie(); goodieT= 1.0 + Math.random()*0.8; }
+  crumbT-=dt; if(crumbT<=0){ spawnCrumbs(); crumbT= 0.9 + Math.random()*0.7; }
+  if(levels[levelIdx].boss && !boss) spawnBoss();
+
+  // Move world toward camera
+  const packs=[obstacles, goodies, crumbs];
+  for(const arr of packs){
+    for(const m of arr){ m.position.z += speed*160*dt; if(m.userData.fall){ m.position.y = Math.max(0.25, m.position.y - (m.userData.vy||0.03)); } }
+    for(let i=arr.length-1;i>=0;i--){ if(arr[i].position.z>6) { scene.remove(arr[i]); arr.splice(i,1); } }
   }
 
-  const player = createOreo();
-  player.position.set(0, 0.6, 0);
-  scene.add(player);
+  // Boss movement
+  if(boss){
+    boss.position.z += speed*160*dt*0.6;
+    boss.position.x += boss.userData.vx;
+    if(Math.abs(boss.position.x)>1.7) boss.userData.vx *= -1;
+    if(boss.position.z> -10) boss.position.z = -10;
+  }
 
-  // Obstacles & goodies
-  const obstacles = [];
-  const goodies = []; // {type, mesh}
-  const crumbs = [];  // pickups small
+  // Gravity
+  vy -= G * (1 + (jumps===2?0.2:0));
+  player.position.y += vy;
+  if(player.position.y<=groundY){
+    player.position.y = groundY;
+    if(!onGround){ onGround=true; jumps=0; }
+  }else{
+    if(onGround){ onGround=false; coyoteTimer=COYOTE; }
+  }
+  if(coyoteTimer>0) coyoteTimer -= dt;
+  if(jumpBufferTimer>0){ jumpBufferTimer -= dt; if(onGround){ tryPerformJump(); } }
 
-  function spawnObstacle(){
-    const type = Math.random()<0.5? 'cube' : (Math.random()<0.5?'fall':'wall');
-    let mesh;
-    if(type==='cube'){
-      const s = 0.5 + Math.random()*0.3;
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xff4b6e }));
-      mesh.userData.label = 'OOS';
-      mesh.position.set((Math.random()*2-1)*1.1, 0.25, -30);
-    }else if(type==='fall'){
-      const s = 0.45 + Math.random()*0.3;
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xe8a36b }));
-      mesh.userData.fall = true;
-      mesh.userData.vy = 0.02 + Math.random()*0.02;
-      mesh.position.set((Math.random()*2-1)*1.1, 3 + Math.random()*1.5, -30);
-      mesh.userData.label = 'Нет стока';
-    }else{
-      const w = 0.7 + Math.random()*0.4;
-      const h = 0.35 + Math.random()*0.2;
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.5), new THREE.MeshStandardMaterial({ color: 0xffb84b }));
-      mesh.position.set((Math.random()*2-1)*1.1, h/2, -30);
-      mesh.userData.label = 'ERP упал';
+  // Collisions
+  const p = player.position;
+  for(let i=obstacles.length-1;i>=0;i--){
+    const m=obstacles[i];
+    if(Math.abs(m.position.z-p.z)<0.55 && Math.abs(m.position.x-p.x)<0.65 && Math.abs(m.position.y-p.y)<0.5){
+      if(shieldTimer>0){ shieldTimer=0; scene.remove(m); obstacles.splice(i,1); toast('Щит спас!'); }
+      else { gameOver(); return; }
     }
-    mesh.castShadow = true;
-    obstacles.push(mesh);
-    scene.add(mesh);
   }
-
-  function spawnGoodie(){
-    const r = Math.random();
-    const type = r<0.5 ? 'discount' : (r<0.8 ? 'prepack':'erid');
-    let color = type==='discount' ? 0x2b7bd4 : (type==='prepack' ? 0x00d6ff : 0x7a4bd4);
-    const mesh = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.06, 16, 24), new THREE.MeshStandardMaterial({ color }));
-    mesh.position.set((Math.random()*2-1)*1.1, 0.9 + Math.random()*0.8, -28);
-    mesh.castShadow=true;
-    mesh.userData.type = type;
-    goodies.push(mesh); scene.add(mesh);
+  if(boss && Math.abs(boss.position.z-p.z)<0.8 && Math.abs(boss.position.x-p.x)<1.2){
+    if(shieldTimer>0){ shieldTimer=0; bossHP--; boss.position.y += 0.15; toast('Босс -1 HP'); if(bossHP<=0){ scene.remove(boss); boss=null; toast('ERP повержен!'); } }
+    else { gameOver(); return; }
   }
-
-  function spawnCrumbs(){
-    const n = 5 + Math.floor(Math.random()*4);
-    for(let i=0;i<n;i++){
-      const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshStandardMaterial({ color: 0x6d3b2a }));
-      s.position.set((Math.random()*2-1)*1.1, 0.7 + Math.sin(i/n*Math.PI)*0.5, -26 - i*0.8);
-      s.castShadow=true; crumbs.push(s); scene.add(s);
+  for(let i=goodies.length-1;i>=0;i--){
+    const m=goodies[i];
+    if(m.position.distanceTo(p)<0.8){
+      const type=m.userData.type;
+      if(type==='discount'){ speedBoost=1.6; boostTimer=2.8; toast('Допскидка +3% 🚀'); }
+      else if(type==='prepack'){ shieldTimer=4.0; toast('Препак — щит'); }
+      else { toast('Согласовано без ERID ✨'); }
+      scene.remove(m); goodies.splice(i,1);
+    }
+  }
+  for(let i=crumbs.length-1;i>=0;i--){
+    const m=crumbs[i];
+    if(m.position.distanceTo(p)<0.7){
+      score++; scene.remove(m); crumbs.splice(i,1);
     }
   }
 
-  // Gameplay state
-  const SPEED_UP = 1.04;
-  const levels=[
-    { name:'Склад РЦ', seconds:24, speed:0.22*SPEED_UP },
-    { name:'Магазин', seconds:28, speed:0.25*SPEED_UP },
-    { name:'Переговорка', seconds:32, speed:0.28*SPEED_UP }
-  ];
-  let levelIdx=0, timeLeft=levels[0].seconds, speed=levels[0].speed, t=0;
-  let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
-  const hud = {
-    level: document.getElementById('levelLabel'),
-    score: document.getElementById('scoreLabel'),
-    best: document.getElementById('bestLabel'),
-    status: document.getElementById('statusLabel'),
-    toast: document.getElementById('toast'),
-    count: document.getElementById('count'),
-    start: document.getElementById('startBanner'),
-    startBtn: document.getElementById('startBtn'),
-    pauseBtn: document.getElementById('pauseBtn'),
-    restartBtn: document.getElementById('restartBtn'),
-    hint: document.getElementById('hint')
-  };
+  // boosters
+  if(boostTimer>0){ boostTimer-=dt; }
+  const boostFactor = boostTimer>0 ? 1.6 : 1.0;
+  if(shieldTimer>0){ shieldTimer-=dt; }
+  // eye wobble
+  player.rotation.y = Math.sin(t*0.7)*0.1;
+  // UI
+  hud.score.textContent = 'Очки (крошки): ' + score;
+  hud.best.textContent = 'Рекорд: ' + Math.max(best, score);
+  hud.status.textContent = `Осталось: ${Math.max(0, Math.ceil(timeLeft))}с` + (shieldTimer>0?' • Щит':'') + (boostTimer>0?' • Ускорение':'');
+  // apply boost to speed
+  speed = levels[levelIdx].speed * boostFactor + Math.min(0.08, Math.floor(t/12)*0.012);
+}
 
-  // Physics & jump feel
-  let vy = 0;
-  const G = 0.015;
-  let groundY = 0.6;
-  let jumps=0, onGround=true;
-  // coyote time: small grace after leaving ground; jump buffer: small window before landing
-  let coyoteTimer=0, jumpBufferTimer=0;
-  const COYOTE=0.14, BUFFER=0.14;
+function levelUp(i){
+  timeLeft = levels[i].seconds;
+  toast('Уровень: '+levels[i].name+' • Двойной прыжок');
+  hud.level.textContent = 'Уровень: '+levels[i].name;
+  if(levels[i].boss){ toast('BOSS: ERP появится впереди!'); }
+}
 
-  function requestJump(){
-    jumpBufferTimer = BUFFER; // remember intent
-    tryPerformJump();
-  }
-  function tryPerformJump(){
-    // allowed if onGround or inside coyote, or second jump
-    if((onGround || coyoteTimer>0) && jumps===0){
-      vy = 0.36; jumps=1; onGround=false; coyoteTimer=0; jumpBufferTimer=0; return;
-    }
-    if(!onGround && jumps===1){
-      vy = 0.34; jumps=2; jumpBufferTimer=0; return;
-    }
-  }
+function start(){
+  hud.start.classList.add('hidden'); document.getElementById('hint').style.display = isTouch ? 'block':'none';
+  levelIdx=0; timeLeft=levels[0].seconds; t=0; score=0;
+  // cleanup
+  for(const a of [obstacles, goodies, crumbs]){ a.forEach(m=>scene.remove(m)); a.length=0; }
+  if(boss){ scene.remove(boss); boss=null; }
+  player.position.set(0, groundY, 0); vy=0; jumps=0; onGround=true; coyoteTimer=0;
+  paused=false; running=false;
+  // countdown
+  let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
+  const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick, 600);} else { hud.count.classList.add('hidden'); running=true; } };
+  setTimeout(tick, 600);
+}
 
-  function update(dt){
-    t += dt;
-    timeLeft -= dt;
-    if(timeLeft<=0){
-      levelIdx++;
-      if(levelIdx>=levels.length){ win(); return; }
-      levelUp(levelIdx);
-    }
-    speed = levels[levelIdx].speed + Math.min(0.06, Math.floor(t/12)*0.01);
-    ground.position.z += speed*120*dt;
-    if(ground.position.z>-20) ground.position.z = -60;
+function gameOver(){
+  running=false;
+  best = Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best);
+  toast('Игра окончена');
+  setTimeout(start, 1200);
+}
+function win(){
+  running=false;
+  best = Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best);
+  toast('Год закрыт на 120% KPI 🎉');
+  setTimeout(start, 1800);
+}
 
-    // spawn
-    spawnT-=dt; if(spawnT<=0){ spawnObstacle(); spawnT= 0.7 + Math.random()*0.8; }
-    goodieT-=dt; if(goodieT<=0){ spawnGoodie(); goodieT= 1.0 + Math.random()*0.8; }
-    crumbT-=dt; if(crumbT<=0){ spawnCrumbs(); crumbT= 0.9 + Math.random()*0.7; }
+// Input
+function onJump(){ requestJump(); }
+window.addEventListener('keydown', e=>{ if(e.code==='Space' || e.code==='ArrowUp') { e.preventDefault(); onJump(); } if(e.code==='KeyP'){ paused=!paused; }});
+renderer.domElement.addEventListener('pointerdown', onJump, {passive:true});
+if(isTouch){ renderer.domElement.addEventListener('touchstart', onJump, {passive:true}); }
 
-    // move items toward player (scroll world)
-    for(const arr of [obstacles, goodies, crumbs]){
-      for(const m of arr){ m.position.z += speed*120*dt; if(m.userData.fall){ m.position.y = Math.max(0.25, m.position.y - (m.userData.vy||0.03)); } }
-      for(let i=arr.length-1;i>=0;i--){ if(arr[i].position.z>6) { scene.remove(arr[i]); arr.splice(i,1); } }
-    }
+hud.startBtn.addEventListener('click', start);
+hud.pauseBtn.addEventListener('click', ()=>{ paused = !paused; });
+hud.restartBtn.addEventListener('click', start);
 
-    // gravity
-    vy -= G * (1 + (jumps===2?0.2:0));
-    player.position.y += vy;
-    if(player.position.y<=groundY){
-      player.position.y = groundY;
-      if(!onGround){ onGround=true; jumps=0; }
-    }else{
-      if(onGround){ onGround=false; coyoteTimer=COYOTE; }
-    }
-    if(coyoteTimer>0) coyoteTimer -= dt;
-    if(jumpBufferTimer>0){ jumpBufferTimer -= dt; if(onGround){ tryPerformJump(); } }
+// Resize
+window.addEventListener('resize', ()=>{
+  const w = window.innerWidth, h=window.innerHeight;
+  renderer.setSize(w,h);
+  composer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+});
 
-    // collisions
-    const px=player.position.x, py=player.position.y, pz=player.position.z;
-    for(let i=obstacles.length-1;i>=0;i--){
-      const m=obstacles[i];
-      if(Math.abs(m.position.z-pz)<0.5 && Math.abs(m.position.x-px)<0.6 && Math.abs(m.position.y-py)<0.5){
-        gameOver(); return;
-      }
-    }
-    for(let i=goodies.length-1;i>=0;i--){
-      const m=goodies[i];
-      if(m.position.distanceTo(player.position)<0.7){
-        const type=m.userData.type;
-        if(type==='discount'){ speedBoost=1.6; boostTimer=2.8; toast('Допскидка +3% 🚀'); }
-        else if(type==='prepack'){ shieldTimer=3.6; toast('Препак — щит'); }
-        else { toast('Согласовано без ERID ✨'); }
-        scene.remove(m); goodies.splice(i,1);
-      }
-    }
-    for(let i=crumbs.length-1;i>=0;i--){
-      const m=crumbs[i];
-      if(m.position.distanceTo(player.position)<0.6){
-        score++; scene.remove(m); crumbs.splice(i,1);
-      }
-    }
-
-    // boosters
-    if(boostTimer>0){ boostTimer-=dt; speed*=speedBoost; }
-    if(shieldTimer>0){ shieldTimer-=dt; }
-
-    // eyes blink
-    player.rotation.y = Math.sin(t*0.7)*0.1;
-
-    // UI
-    hud.score.textContent = 'Очки (крошки): ' + score;
-    hud.best.textContent = 'Рекорд: ' + Math.max(best, score);
-    hud.status.textContent = `Осталось: ${Math.max(0, Math.ceil(timeLeft))}с`;
-  }
-
-  function levelUp(i){
-    timeLeft = levels[i].seconds;
-    toast('Уровень: '+levels[i].name+' • Двойной прыжок');
-    hud.level.textContent = 'Уровень: '+levels[i].name;
-  }
-
-  function toast(msg){ hud.toast.textContent=msg; hud.toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>hud.toast.classList.remove('show'), 2000); }
-
-  // Spawn timers
-  let spawnT=0.3, goodieT=0.7, crumbT=0.2;
-
-  // Boosters
-  let boostTimer=0, shieldTimer=0, speedBoost=1.0;
-
-  // Loop
-  let last=performance.now(), running=false;
-  function loop(){
-    const now=performance.now(); const dt=Math.min(0.05, (now-last)/1000); last=now;
-    if(running) update(dt);
-    renderer.render(scene, camera);
-    requestAnimationFrame(loop);
-  }
-  loop();
-
-  // Start / Pause / Restart
-  function start(){
-    hud.start.classList.add('hidden'); document.getElementById('hint').style.display = isTouch ? 'block':'none';
-    levelUp(0); score=0; running=false; timeLeft=levels[0].seconds; t=0;
-    player.position.set(0, groundY, 0); vy=0; jumps=0; onGround=true; coyoteTimer=0;
-    // countdown
-    let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
-    const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick, 600);} else { hud.count.classList.add('hidden'); running=true; } };
-    setTimeout(tick, 600);
-  }
-
-  function gameOver(){
-    running=false;
-    best = Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best);
-    toast('Игра окончена');
-    setTimeout(start, 1200);
-  }
-  function win(){
-    running=false;
-    best = Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best);
-    toast('Год закрыт на 120% KPI 🎉');
-    setTimeout(start, 1800);
-  }
-
-  // Input
-  function onJump(){ requestJump(); }
-  window.addEventListener('keydown', e=>{ if(e.code==='Space' || e.code==='ArrowUp') { e.preventDefault(); onJump(); } if(e.code==='KeyP'){ running=!running; }});
-  renderer.domElement.addEventListener('pointerdown', onJump, {passive:true});
-  if(isTouch){ renderer.domElement.addEventListener('touchstart', onJump, {passive:true}); }
-
-  hud.startBtn.addEventListener('click', start);
-  hud.pauseBtn.addEventListener('click', ()=>{ running = !running; });
-  hud.restartBtn.addEventListener('click', start);
-
-  // Resize
-  window.addEventListener('resize', ()=>{
-    const w = window.innerWidth, h=window.innerHeight;
-    renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
-  });
-
-  // Init labels
-  hud.level.textContent = 'Уровень: —';
-  hud.score.textContent = 'Очки (крошки): 0';
-  hud.best.textContent = 'Рекорд: ' + best;
-  hud.status.textContent = '';
-})();
+// Init HUD
+hud.level.textContent = 'Уровень: —';
+hud.score.textContent = 'Очки (крошки): 0';
+hud.best.textContent = 'Рекорд: ' + best;
+hud.status.textContent = '';
 </script>
 </body>
 </html>
