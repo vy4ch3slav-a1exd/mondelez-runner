@@ -3,24 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mondelez Runner — 3D v7 UltraTouch</title>
+<title>Mondelez Runner — 3D v8 UltraTouch Pro</title>
 <meta name="theme-color" content="#ffeefb">
 <style>
-  :root { --accent:#7b61ff; --ui:#2b225a; --bg:#fff4fb; --mint:#00e6a3; --blue:#2b7bd4; --rose:#ff6b8a; }
+  :root {
+    --accent:#7b61ff; --ui:#2b225a; --bg:#fff4fb; --mint:#00e6a3; --blue:#2b7bd4; --rose:#ff6b8a;
+    --safe-b: max( env(safe-area-inset-bottom, 0px), 18px);
+    --safe-t: max( env(safe-area-inset-top, 0px), 10px);
+    --safe-l: max( env(safe-area-inset-left, 0px), 10px);
+    --safe-r: max( env(safe-area-inset-right, 0px), 10px);
+  }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  #hud{position:fixed;inset:0;pointer-events:none;z-index:9999}
-  .hud{position:absolute;left:12px;top:10px;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.45);font-weight:800}
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:30} /* HUD above everything but controls */
+  .hud{position:absolute;left:var(--safe-l);top:var(--safe-t);color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.45);font-weight:800}
   .hud .line{font-size:13px} .hud .big{font-size:16px;margin-bottom:2px}
-  .btns{position:absolute;right:12px;top:10px;display:flex;gap:8px}
+  .btns{position:absolute;right:var(--safe-r);top:var(--safe-t);display:flex;gap:8px}
   .btn{pointer-events:auto;border:none;border-radius:12px;padding:10px 16px;background:var(--ui);color:#fff;font-weight:800;
        box-shadow:0 8px 26px rgba(0,0,0,.25);cursor:pointer;touch-action:manipulation}
   .btn.sec{background:var(--blue)}
-  .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:9vh;background:rgba(20,20,35,.92);color:#e7e7ff;padding:10px 14px;
+  .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 80px);background:rgba(20,20,35,.92);color:#e7e7ff;padding:10px 14px;
          border:1px solid rgba(122,75,212,.4);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;
-         transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+         transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap;z-index:31}
   .toast.show{opacity:1;transform:translate(-50%,-8px)}
-  .banner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .banner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:25}
   .card{pointer-events:auto;max-width:min(960px,96vw);background:#fff;border:3px solid var(--accent);border-radius:20px;
         padding:20px 22px;color:#2b225a;text-align:center;box-shadow:0 22px 70px rgba(114,84,196,.25)}
   .start-title{font-size:clamp(24px,4vw,40px);margin:6px 0 10px}
@@ -33,22 +39,28 @@
   .diff{background:#efe9ff;color:#2b225a;border:2px solid var(--accent)}
   .diff.easy{border-color:var(--mint)}.diff.mid{border-color:var(--blue)}.diff.hard{border-color:var(--rose)}
   .hidden{display:none}
-  .count{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);color:#fff;font-weight:900;font-size:12vh;text-shadow:0 10px 50px rgba(0,0,0,.35);pointer-events:none}
-  .pill{position:absolute;left:50%;top:12px;transform:translateX(-50%);pointer-events:none;background:rgba(255,255,255,.9);color:#1d1d2e;padding:6px 12px;border-radius:999px;border:2px solid #c9b7ff;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace}
-  .floating{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-weight:900;text-shadow:0 0 12px rgba(0,0,0,.4);opacity:0;transition:opacity .2s, transform .4s}
+  .count{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);color:#fff;font-weight:900;font-size:12vh;text-shadow:0 10px 50px rgba(0,0,0,.35);pointer-events:none;z-index:29}
+  .floating{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-weight:900;text-shadow:0 0 12px rgba(0,0,0,.4);opacity:0;transition:opacity .2s, transform .4s;z-index:29}
+  .tips{position:absolute;left:var(--safe-l);bottom:calc(var(--safe-b) + 96px);max-width:min(92vw,560px);background:rgba(255,255,255,.96);color:#17172a;border:2px solid #c9b7ff;border-radius:14px;padding:10px 12px;font:13px/1.25 ui-monospace,Menlo,Consolas,monospace;pointer-events:auto;z-index:32}
+  .tips-row{display:flex;align-items:center;gap:8px}
+  .tips .close{margin-left:auto;background:#efe9ff;border:1px solid #b7a6ff;border-radius:10px;padding:4px 8px;font-weight:800;cursor:pointer}
+  .tips.mini{opacity:.85}
+  .tips.hidden{display:none}
+  .help{position:absolute;left:var(--safe-l);bottom:calc(var(--safe-b) + 56px);background:rgba(20,20,35,.75);color:#fff;border:2px solid rgba(255,255,255,.6);
+        padding:8px 10px;border-radius:12px;font-weight:900;pointer-events:auto;touch-action:manipulation;z-index:32}
+  .badge{position:absolute;right:var(--safe-r);bottom:var(--safe-b);color:#223;background:rgba(255,255,255,.75);padding:6px 10px;border-radius:10px;font:11px/1.2 ui-monospace,Menlo,Consolas,monospace;z-index:20}
 
-  /* On-screen controls */
-  .controls{position:fixed;inset:0;pointer-events:none}
+  /* On-screen controls (highest z to avoid overlap), with safe-area padding */
+  .controls{position:fixed;inset:0;pointer-events:none;z-index:40}
   .zone{position:absolute;top:0;bottom:0;width:50%;pointer-events:auto}
   .zone.left{left:0}
   .zone.right{right:0}
-  .softbtn{position:absolute;bottom:18px;right:16px;background:rgba(20,20,35,.65);color:#fff;border:2px solid rgba(255,255,255,.6);
-           padding:12px 14px;border-radius:14px;font-weight:900;pointer-events:auto;touch-action:manipulation;user-select:none}
-  .softrow{position:absolute;bottom:18px;left:16px;display:flex;gap:10px;pointer-events:auto}
-  .softkey{background:rgba(20,20,35,.65);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 14px;border-radius:14px;font-weight:900;touch-action:manipulation;user-select:none}
+  .softrow{position:absolute;bottom:calc(var(--safe-b));left:calc(var(--safe-l));display:flex;gap:10px;pointer-events:auto}
+  .softkey,.softbtn{background:rgba(20,20,35,.65);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 14px;border-radius:14px;font-weight:900;touch-action:manipulation;user-select:none}
+  .softbtn{position:absolute;bottom:calc(var(--safe-b));right:calc(var(--safe-r));pointer-events:auto}
+  #btnSlide{right:calc(var(--safe-r) + 90px)}
+  #btnShoot{right:calc(var(--safe-r) + 170px)}
   .softbtn:active,.softkey:active{transform:translateY(2px);opacity:.9}
-  .hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);color:#003226;background:#bff2e8;border:2px solid #0acaa0;
-        padding:6px 10px;border-radius:10px;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;pointer-events:none}
 </style>
 </head>
 <body>
@@ -65,15 +77,14 @@
   </div>
   <div class="toast" id="toast">Текст</div>
   <div class="count hidden" id="count">3</div>
-  <div class="pill" id="pillTip">Управление: левая половина — свайпы по полосам; правая — прыжок/слайд; удержание — огонь</div>
   <div class="floating" id="floatTxt">+1</div>
 
   <div class="banner" id="startBanner">
     <div class="card">
       <div style="font-size:46px;margin-bottom:6px;">🍪🎮🍭</div>
-      <div class="start-title">Mondelez Runner — 3D v7 UltraTouch</div>
+      <div class="start-title">Mondelez Runner — 3D v8 UltraTouch Pro</div>
       <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
-      <div class="mini">Оптимизированные сенсорные жесты: левая половина — полосы, правая — прыжок/слайд, удержание — автострельба. Плюс мягкие экранные кнопки.</div>
+      <div class="mini">Сенсор: левая половина — полосы, правая — прыжок/слайд/удержание‑огонь. UI адаптируется к вырезам и панелям iOS/Android.</div>
       <div class="start-actions">
         <button class="btnlg diff easy" id="startEasy">🥧 ЛЕГКО</button>
         <button class="btnlg diff mid"  id="startMid">🍫 СРЕДНЕ</button>
@@ -81,20 +92,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Tips / Help -->
+  <div class="tips" id="tips">
+    <div class="tips-row">
+      <div><b>Управление:</b> левая половина — свайпы по полосам; правая — прыжок/слайд; удержание — огонь</div>
+      <button class="close" id="hideTips">OK</button>
+    </div>
+    <div style="margin-top:6px;opacity:.8">* Подсказки больше не будут мешать: можно вызвать в любой момент кнопкой ?</div>
+  </div>
+  <button class="help" id="helpBtn">?</button>
+
+  <div class="badge">v8 ultratouch pro</div>
 </div>
 
-<!-- On-screen controls layer -->
+<!-- Controls layer -->
 <div class="controls" id="controls">
   <div class="zone left" id="zoneLeft" aria-label="Полосы"></div>
-  <div class="zone right" id="zoneRight" aria-label="Прыжок/Слайд"></div>
+  <div class="zone right" id="zoneRight" aria-label="Прыжок/Слайд/Огонь"></div>
   <div class="softrow">
     <div class="softkey" id="btnLeft">◀︎</div>
     <div class="softkey" id="btnRight">▶︎</div>
   </div>
   <div class="softbtn" id="btnJump">JUMP</div>
-  <div class="softbtn" id="btnSlide" style="right:96px">SLIDE</div>
-  <div class="softbtn" id="btnShoot" style="right:176px">🎯</div>
-  <div class="hint" id="hint">Свайпы слева — полосы • Тап справа — прыжок • Свайп вниз справа — слайд • Удержание — огонь</div>
+  <div class="softbtn" id="btnSlide">SLIDE</div>
+  <div class="softbtn" id="btnShoot">🎯</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
@@ -103,7 +125,12 @@
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
   const rand=(a,b)=>a+Math.random()*(b-a);
 
-  // ---- RENDERER ----
+  // WebAudio minimal (deactivated by default to avoid autoplay blocks; unmute on first interaction)
+  let audioCtx=null; const sfx=(type)=>{ try{ if(!audioCtx) return; const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(.0001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(.2,audioCtx.currentTime+.01); g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.18);
+    o.type= (type==='hit'?'square':type==='coin'?'triangle':'sine'); o.frequency.value=(type==='coin'?880:(type==='hit'?160:320)); o.start(); o.stop(audioCtx.currentTime+.2);}catch(e){} };
+
+  // Renderer
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -112,7 +139,7 @@
   renderer.toneMappingExposure = 1.55;
   document.body.prepend(renderer.domElement);
 
-  // ---- SCENE ----
+  // Scene
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 400);
   camera.position.set(0.2, 2.0, 6.5);
@@ -122,7 +149,7 @@
   const rim  = new THREE.DirectionalLight(0xff9bd4, 0.9); rim.position.set(-6,3,-2);
   scene.add(hemi, sun, rim);
 
-  // Simple candy sky & ground
+  // Candy sky & ground
   function makeSkyGradient(top='#fff8ff', mid='#f0f7ff', bot='#fff0f4'){
     const c=document.createElement('canvas'); c.width=2; c.height=256; const g=c.getContext('2d');
     const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,top); grd.addColorStop(.55,mid); grd.addColorStop(1,bot);
@@ -140,7 +167,7 @@
   const laneLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12,140), new THREE.MeshBasicMaterial({ color:0x3b6cff, transparent:true, opacity:.6 }));
   laneLine.rotation.x=-Math.PI/2; laneLine.position.z=-60; scene.add(laneLine);
 
-  // Oreo model
+  // Oreo
   function createOreo(){
     const g1=new THREE.CylinderGeometry(.52,.52,.2,64);
     const g2=new THREE.CylinderGeometry(.49,.49,.09,48);
@@ -163,7 +190,7 @@
   // Entities
   const obstacles=[], goodies=[], crumbs=[], shots=[], particles=[];
 
-  // Obstacle models
+  // Obstacles
   function mkBarrier(){ const bar=new THREE.Group();
     const base=new THREE.Mesh(new THREE.BoxGeometry(1.2,.4,.3), new THREE.MeshStandardMaterial({ color:0x3a3a4a }));
     const bar1=new THREE.Mesh(new THREE.BoxGeometry(1.2,.18,.18), new THREE.MeshStandardMaterial({ color:0xff8c63, emissive:0xff8c63, emissiveIntensity:.35 })); bar1.position.y=.25;
@@ -220,21 +247,22 @@
   const DIFF={ easy:{speed:.22,spawn:1.0,bonus:.85}, mid:{speed:.28,spawn:.85,bonus:1.0}, hard:{speed:.36,spawn:.7,bonus:1.15} };
   let diff=DIFF.mid;
 
-  // State & HUD
-  let timeLeft=30, speed=diff.speed, t=0; let score=0, best=+localStorage.getItem('mdz_best_v7')||0;
+  // State/HUD
+  let timeLeft=30, speed=diff.speed, t=0; let score=0, best=+localStorage.getItem('mdz_best_v8')||0;
   const hud={level:qs('#levelLabel'),score:qs('#scoreLabel'),best:qs('#bestLabel'),status:qs('#statusLabel'),
-    toast:qs('#toast'),count:qs('#count'),start:qs('#startBanner'),floatTxt:qs('#floatTxt'),pill:qs('#pillTip'),
-    startEasy:qs('#startEasy'),startMid:qs('#startMid'),startHard:qs('#startHard'),pauseBtn:qs('#pauseBtn'),restartBtn:qs('#restartBtn')};
-  const ui={ zoneL:qs('#zoneLeft'), zoneR:qs('#zoneRight'), btnLeft:qs('#btnLeft'), btnRight:qs('#btnRight'), btnJump:qs('#btnJump'), btnSlide:qs('#btnSlide'), btnShoot:qs('#btnShoot'), hint:qs('#hint') };
+    toast:qs('#toast'),count:qs('#count'),start:qs('#startBanner'),floatTxt:qs('#floatTxt'),
+    startEasy:qs('#startEasy'),startMid:qs('#startMid'),startHard:qs('#startHard'),pauseBtn:qs('#pauseBtn'),restartBtn:qs('#restartBtn'),
+    tips:qs('#tips'),help:qs('#helpBtn'),hideTips:qs('#hideTips')};
+  const ui={ zoneL:qs('#zoneLeft'), zoneR:qs('#zoneRight'), btnLeft:qs('#btnLeft'), btnRight:qs('#btnRight'), btnJump:qs('#btnJump'), btnSlide:qs('#btnSlide'), btnShoot:qs('#btnShoot') };
   function qs(s){return document.querySelector(s)}
   function showToast(s){ hud.toast.textContent=s; hud.toast.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>hud.toast.classList.remove('show'),2200); }
   function floatText(txt,color){ const el=hud.floatTxt; el.textContent=txt; el.style.color=color||'#fff'; el.style.opacity=1; el.style.transform='translate(-50%,-60%) scale(1)'; clearTimeout(floatText.t); setTimeout(()=>{ el.style.opacity=0; el.style.transform='translate(-50%,-85%) scale(1.1)'; },10); floatText.t=setTimeout(()=>{ el.style.opacity=0; },700); }
 
   // Physics
-  let vy=0, groundY=.68, jumps=0, onGround=true; let coyote=0, buffer=0; const COYOTE=.18, BUFFER=.18; const G=.0175;
+  const G=.0175; let vy=0, groundY=.68, jumps=0, onGround=true; let coyote=0, buffer=0; const COYOTE=.18, BUFFER=.18;
   let sliding=false, slideT=0;
   function wantJump(){ buffer=BUFFER; doJump(); }
-  function doJump(){ if(sliding) return; if((onGround||coyote>0)&&jumps===0){ vy=.40; jumps=1; onGround=false; coyote=0; buffer=0; squash(player, .85); return; } if(!onGround&&jumps===1){ vy=.36; jumps=2; buffer=0; squash(player, .9); return; } }
+  function doJump(){ if(sliding) return; if((onGround||coyote>0)&&jumps===0){ vy=.40; jumps=1; onGround=false; coyote=0; buffer=0; squash(player,.85); } else if(!onGround&&jumps===1){ vy=.36; jumps=2; buffer=0; squash(player,.9); } }
   function startSlide(){ if(sliding) return; sliding=true; slideT=.7; player.scale.y=.6; player.scale.x=1.15; }
   function endSlide(){ sliding=false; player.scale.set(1,1,1); }
 
@@ -243,29 +271,26 @@
   function moveRight(){ laneIdx=Math.min(2,laneIdx+1); targetX=laneX[laneIdx]; wiggleCamera(+.02); }
 
   // Shots
-  function shoot(){ const s=new THREE.Mesh(new THREE.SphereGeometry(.09,16,14), new THREE.MeshStandardMaterial({ color:0x5b3a29, emissive:0x2a1208, emissiveIntensity:.7 }));
+  function shoot(){ if(!audioCtx) try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){};
+    const s=new THREE.Mesh(new THREE.SphereGeometry(.09,16,14), new THREE.MeshStandardMaterial({ color:0x5b3a29, emissive:0x2a1208, emissiveIntensity:.7 }));
     s.position.set(player.position.x, player.position.y+.2, .2); s.userData.vz=-2.7; s.castShadow=true; shots.push(s); scene.add(s);
-    spawnBurst(player.position.x, player.position.y+.2, .2, 0x5b3a29);
+    spawnBurst(player.position.x, player.position.y+.2, .2, 0x5b3a29); sfx('shoot');
   }
-  let fireLoop=null;
-  function startFire(){ if(fireLoop) return; shoot(); fireLoop=setInterval(shoot, 180); }
-  function stopFire(){ if(fireLoop){ clearInterval(fireLoop); fireLoop=null; } }
+  let fireLoop=null; function startFire(){ if(fireLoop) return; shoot(); fireLoop=setInterval(shoot,180); } function stopFire(){ if(fireLoop){clearInterval(fireLoop); fireLoop=null;} }
 
-  // Juicy helpers
-  function squash(obj, k){ obj.scale.set(1.05, k, 1.05); setTimeout(()=>obj.scale.set(1,1,1), 120); }
-  let shakeT=0, shakeAmp=0;
-  function wiggleCamera(a){ shakeAmp=Math.min(.06, Math.abs(a)); shakeT=0.18; camera.rotation.z += a; }
-  function hitFlash(mesh){ const m=mesh.material; if(Array.isArray(m)) return; if(m.emissive){ const old=m.emissive.clone(); m.emissive.setHex(0xffffff); m.emissiveIntensity=1.0; setTimeout(()=>{ m.emissive.copy(old); m.emissiveIntensity=.1; },80); } }
-  function spawnBurst(x,y,z, color){ const n=16; for(let i=0;i<n;i++){ const p=new THREE.Mesh(new THREE.SphereGeometry(.04, 8,6), new THREE.MeshBasicMaterial({ color })); p.position.set(x,y,z); p.userData={vx:rand(-.08,.08), vy:rand(.04,.12), vz:rand(-.08,.02), life:.6+Math.random()*.3}; particles.push(p); scene.add(p); } }
+  // Juicy
+  function squash(obj,k){ obj.scale.set(1.05,k,1.05); setTimeout(()=>obj.scale.set(1,1,1),120); }
+  let shakeT=0, shakeAmp=0; function wiggleCamera(a){ shakeAmp=Math.min(.06,Math.abs(a)); shakeT=0.18; camera.rotation.z+=a; }
+  function hitFlash(mesh){ const m=mesh.material; if(Array.isArray(m)) return; if(m.emissive){ const old=m.emissive.clone(); m.emissive.setHex(0xffffff); m.emissiveIntensity=1.0; setTimeout(()=>{ m.emissive.copy(old); m.emissiveIntensity=.1; },80);} }
+  function spawnBurst(x,y,z,color){ const n=16; for(let i=0;i<n;i++){ const p=new THREE.Mesh(new THREE.SphereGeometry(.04,8,6), new THREE.MeshBasicMaterial({ color })); p.position.set(x,y,z); p.userData={vx:rand(-.08,.08),vy:rand(.04,.12),vz:rand(-.08,.02),life:.6+Math.random()*.3}; particles.push(p); scene.add(p);} }
 
-  // Timers & loop
+  // Timers
   let spawnT=.35, goodieT=.9, crumbT=.3; let boostTimer=0, shieldTimer=0;
   let last=performance.now(), running=false, paused=false;
-  function loop(){ const now=performance.now(); const dt=Math.min(.05,(now-last)/1000); last=now; if(running&&!paused) update(dt); renderer.render(scene,camera); requestAnimationFrame(loop) } loop();
+  function loop(){ const now=performance.now(); const dt=Math.min(.05,(now-last)/1000); last=now; if(running&&!paused) update(dt); renderer.render(scene,camera); requestAnimationFrame(loop);} loop();
 
   function update(dt){
     t+=dt; timeLeft-=dt; if(timeLeft<=0){ timeLeft=30; showToast('Новый круг'); }
-
     ground.position.z += speed*200*dt*(boostTimer>0?1.6:1.0); laneLine.position.z += speed*200*dt*(boostTimer>0?1.6:1.0);
     if(ground.position.z>-120) ground.position.z=-240; if(laneLine.position.z>-30) laneLine.position.z=-60; gtex.offset.y -= dt*(speed*.9+(boostTimer>0?.6:0));
 
@@ -281,36 +306,37 @@
         m.position.z += speed*200*dt*(boostTimer>0?1.6:1.0);
         if(m.userData && m.userData.roll){ m.rotation.z += dt*3; }
         if(m.userData && m.userData.label){ m.userData.label.position.set(m.position.x, m.position.y+(m.userData.kind==='gate'?1.2:.9), m.position.z); }
-        if(m.userData && m.userData.life){ m.userData.life-=dt; m.position.x+=m.userData.vx; m.position.y+=m.userData.vy; m.position.z+=m.userData.vz; m.material.opacity = Math.max(0, m.userData.life*1.2); m.material.transparent=true; }
+        if(m.userData && m.userData.life){ m.userData.life-=dt; m.position.x+=m.userData.vx; m.position.y+=m.userData.vy; m.position.z+=m.userData.vz; m.material.opacity=Math.max(0,m.userData.life*1.2); m.material.transparent=true; }
       }
       for(let i=arr.length-1;i>=0;i--){ const m=arr[i]; if(!m) continue; if(m.position.z>7 || (m.userData && m.userData.life<=0)){ disposeWithLabel(m); arr.splice(i,1); } }
     }
 
+    // lane move
     player.position.x += (targetX - player.position.x) * Math.min(1, dt*12);
 
+    // jump/slide
     vy -= G*(1+(jumps===2?.2:0)); player.position.y += vy;
-    if(player.position.y<=.68){ player.position.y=.68; if(!onGround){ onGround=true; jumps=0; } }
-    else { if(onGround){ onGround=false; coyote=.18; } }
+    if(player.position.y<=groundY){ player.position.y=groundY; if(!onGround){ onGround=true; jumps=0; } } else { if(onGround){ onGround=false; coyote=COYOTE; } }
     if(coyote>0) coyote-=dt; if(buffer>0){ buffer-=dt; if(onGround) doJump(); }
-
     if(sliding){ slideT-=dt; if(slideT<=0) endSlide(); }
 
+    // shots vs obstacles
     for(let si=shots.length-1; si>=0; si--){
       const s=shots[si]; for(let oi=obstacles.length-1; oi>=0; oi--){
         const o=obstacles[oi];
         if(Math.abs(s.position.z-o.position.z)<.6 && Math.abs(s.position.x-o.position.x)<.6){
-          score+=2; hitFlash(o); spawnBurst(o.position.x, o.position.y+.2, o.position.z, 0xffc07a); disposeWithLabel(o); obstacles.splice(oi,1);
-          scene.remove(s); shots.splice(si,1); floatText('+2','#ffd86b'); break;
+          score+=2; hitFlash(o); spawnBurst(o.position.x,o.position.y+.2,o.position.z,0xffc07a); disposeWithLabel(o); obstacles.splice(oi,1);
+          scene.remove(s); shots.splice(si,1); floatText('+2','#ffd86b'); sfx('hit'); break;
         }
       }
     }
 
+    // collisions/bonuses
     const p=player.position;
     for(let i=obstacles.length-1;i>=0;i--){
       const o=obstacles[i]; const nearZ=Math.abs(o.position.z-p.z)<.55; const sameX=Math.abs(o.position.x-p.x)<.65;
       if(nearZ && sameX){
-        let collide=false;
-        if(o.userData.kind==='gate'){ collide=!sliding; } else { collide=Math.abs(o.position.y-p.y)<.5; }
+        let collide=false; if(o.userData.kind==='gate'){ collide=!sliding; } else { collide=Math.abs(o.position.y-p.y)<.5; }
         if(collide){ if(shieldTimer>0){ shieldTimer=0; spawnBurst(o.position.x,o.position.y+.2,o.position.z,0x88e6ff); disposeWithLabel(o); obstacles.splice(i,1); showToast('Щит спас!'); }
           else { gameOver(); return; } }
       }
@@ -322,10 +348,10 @@
         if(type==='discount'){ boostTimer=2.8; floatText('BOOST','#7ad6ff'); showToast('Допскидка +3% 🚀'); }
         else if(type==='prepack'){ shieldTimer=4.0; halo.material.opacity=.95; floatText('ЩИТ','#88e6ff'); showToast('Препак — щит'); }
         else { floatText('OK','#d69bff'); showToast('Согласовано без ERID ✨'); }
-        spawnBurst(m.position.x,m.position.y,m.position.z, 0x7ad6ff); disposeWithLabel(m); goodies.splice(i,1);
+        spawnBurst(m.position.x,m.position.y,m.position.z,0x7ad6ff); disposeWithLabel(m); goodies.splice(i,1); sfx('coin');
       }
     }
-    for(let i=crumbs.length-1;i>=0;i--){ const m=crumbs[i]; if(m.position.distanceTo(p)<.7){ score++; spawnBurst(m.position.x,m.position.y,m.position.z, 0x6d3b2a); scene.remove(m); crumbs.splice(i,1); floatText('+1','#fff'); } }
+    for(let i=crumbs.length-1;i>=0;i--){ const m=crumbs[i]; if(m.position.distanceTo(p)<.7){ score++; spawnBurst(m.position.x,m.position.y,m.position.z,0x6d3b2a); scene.remove(m); crumbs.splice(i,1); floatText('+1','#fff'); sfx('coin'); } }
 
     if(shieldTimer>0){ halo.material.opacity=Math.min(.95,.5+Math.sin(t*8)*.35); } else { halo.material.opacity=Math.max(0,halo.material.opacity- dt*2); }
     speed = diff.speed * (boostTimer>0?1.6:1.0); if(boostTimer>0) boostTimer-=dt; if(shieldTimer>0) shieldTimer-=dt;
@@ -341,17 +367,17 @@
   function clearAll(){ for(const a of [obstacles,goodies,crumbs,shots,particles]){ a.forEach(m=>disposeWithLabel(m)); a.length=0; } }
   function start(chosen){
     diff=DIFF[chosen]||DIFF.mid;
-    hud.start.classList.add('hidden');
-    ui.hint.style.display='block'; hud.pill.style.display='block';
+    document.getElementById('startBanner').classList.add('hidden');
+    hud.tips.classList.remove('hidden'); setTimeout(()=>hud.tips.classList.add('hidden'), 4500);
     timeLeft=30; t=0; score=0; laneIdx=1; targetX=laneX[1];
     player.position.set(0,.68,0); vy=0; jumps=0; onGround=true; coyote=0; boostTimer=0; shieldTimer=0; endSlide();
     clearAll(); paused=false; running=false; let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
     const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick,600);} else { hud.count.classList.add('hidden'); running=true; } };
     setTimeout(tick,600);
   }
-  function gameOver(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_v7',best); showToast('Игра окончена'); setTimeout(()=>start('mid'),1200); }
+  function gameOver(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_v8',best); showToast('Игра окончена'); setTimeout(()=>start('mid'),1200); }
 
-  // --- INPUT: Keyboard (fallback) ---
+  // Keyboard fallback
   function onKey(e){
     if(e.code==='ArrowLeft'||e.code==='KeyA'){ moveLeft(); }
     else if(e.code==='ArrowRight'||e.code==='KeyD'){ moveRight(); }
@@ -363,44 +389,35 @@
   window.addEventListener('keydown', onKey);
   window.addEventListener('keyup', (e)=>{ if(e.code==='ArrowDown'||e.code==='KeyS') endSlide(); });
 
-  // --- INPUT: Dual-zone touch scheme ---
-  // Left zone: horizontal swipe = lanes
+  // Dual-zone touch
   let L_startX=0, L_active=false;
-  ui.zoneL.addEventListener('touchstart', e=>{ if(e.touches.length===1){ L_active=true; L_startX=e.touches[0].clientX; } }, {passive:true});
-  ui.zoneL.addEventListener('touchmove', e=>{ if(!L_active) return; const dx=e.touches[0].clientX-L_startX; if(Math.abs(dx)>48){ dx>0?moveRight():moveLeft(); L_active=false; } }, {passive:true});
-  ui.zoneL.addEventListener('touchend', ()=>{ L_active=false; }, {passive:true});
+  zoneLeft.addEventListener('touchstart', e=>{ if(e.touches.length===1){ L_active=true; L_startX=e.touches[0].clientX; } }, {passive:true});
+  zoneLeft.addEventListener('touchmove', e=>{ if(!L_active) return; const dx=e.touches[0].clientX-L_startX; if(Math.abs(dx)>48){ dx>0?moveRight():moveLeft(); L_active=false; } }, {passive:true});
+  zoneLeft.addEventListener('touchend', ()=>{ L_active=false; }, {passive:true});
 
-  // Right zone: tap = jump, swipe down = slide, long press = auto-fire
-  let R_startX=0, R_startY=0, R_active=false, R_pressTimer=null;
-  function startPress(){ stopFire(); R_pressTimer=setTimeout(()=>startFire(), 260); }
-  function stopPress(){ if(R_pressTimer){ clearTimeout(R_pressTimer); R_pressTimer=null; } stopFire(); }
-  ui.zoneR.addEventListener('touchstart', e=>{
-    if(e.touches.length===1){ R_active=true; R_startX=e.touches[0].clientX; R_startY=e.touches[0].clientY; startPress(); }
-  }, {passive:true});
-  ui.zoneR.addEventListener('touchmove', e=>{
-    if(!R_active) return;
-    const dx=e.touches[0].clientX-R_startX; const dy=e.touches[0].clientY-R_startY;
-    if(Math.abs(dy)>60 && Math.abs(dy)>Math.abs(dx)){ if(dy>0){ endSlide(); startSlide(); stopPress(); R_active=false; } else { wantJump(); stopPress(); R_active=false; } }
-  }, {passive:true});
-  ui.zoneR.addEventListener('touchend', e=>{
-    if(!R_active) return;
-    stopPress();
-    // If short tap without swipe -> jump (or double-jump via buffer)
-    wantJump();
-    R_active=false;
-  }, {passive:true});
+  let R_startX=0, R_startY=0, R_active=false, pressTimer=null;
+  function startPress(){ stopFire(); pressTimer=setTimeout(()=>startFire(),260); }
+  function stopPress(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } stopFire(); }
+  zoneRight.addEventListener('touchstart', e=>{ if(e.touches.length===1){ R_active=true; R_startX=e.touches[0].clientX; R_startY=e.touches[0].clientY; startPress(); } }, {passive:true});
+  zoneRight.addEventListener('touchmove', e=>{ if(!R_active) return; const dx=e.touches[0].clientX-R_startX; const dy=e.touches[0].clientY-R_startY;
+    if(Math.abs(dy)>60 && Math.abs(dy)>Math.abs(dx)){ if(dy>0){ endSlide(); startSlide(); stopPress(); R_active=false; } else { wantJump(); stopPress(); R_active=false; } } }, {passive:true});
+  zoneRight.addEventListener('touchend', e=>{ if(!R_active) return; stopPress(); wantJump(); R_active=false; }, {passive:true});
 
-  // On-screen soft keys
-  ui.btnLeft.addEventListener('click', moveLeft); ui.btnRight.addEventListener('click', moveRight);
-  ui.btnJump.addEventListener('click', wantJump);
-  ui.btnSlide.addEventListener('pointerdown', startSlide); ui.btnSlide.addEventListener('pointerup', endSlide); ui.btnSlide.addEventListener('touchend', endSlide, {passive:true});
-  ui.btnShoot.addEventListener('pointerdown', startFire); ui.btnShoot.addEventListener('pointerup', stopFire); ui.btnShoot.addEventListener('touchend', stopFire, {passive:true});
+  // Soft buttons
+  btnLeft.addEventListener('click', moveLeft); btnRight.addEventListener('click', moveRight);
+  btnJump.addEventListener('click', wantJump);
+  btnSlide.addEventListener('pointerdown', startSlide); btnSlide.addEventListener('pointerup', endSlide); btnSlide.addEventListener('touchend', endSlide, {passive:true});
+  btnShoot.addEventListener('pointerdown', startFire); btnShoot.addEventListener('pointerup', stopFire); btnShoot.addEventListener('touchend', stopFire, {passive:true});
 
-  // Buttons (start/pause/restart)
+  // Start & Pause
   function bindStart(id, lvl){ const el=document.getElementById(id); ['click','pointerup','touchend'].forEach(ev=>el.addEventListener(ev, ()=>start(lvl), {passive:true})); }
   bindStart('startEasy','easy'); bindStart('startMid','mid'); bindStart('startHard','hard');
   ;['click','pointerup','touchend'].forEach(ev=>document.getElementById('pauseBtn').addEventListener(ev, ()=>{ paused=!paused; }, {passive:true}));
   ;['click','pointerup','touchend'].forEach(ev=>document.getElementById('restartBtn').addEventListener(ev, ()=>start('mid'), {passive:true}));
+
+  // Tips toggle
+  hideTips.addEventListener('click', ()=>hud.tips.classList.add('hidden'));
+  helpBtn.addEventListener('click', ()=>hud.tips.classList.toggle('hidden'));
 
   window.addEventListener('resize', ()=>{ const w=innerWidth,h=innerHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); });
 
