@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mondelez Runner — 3D BRIGHT v2</title>
+<title>Mondelez Runner — 3D BRIGHT v2.1 (no‑module)</title>
 <meta name="theme-color" content="#0b0b12">
 <style>
   :root { --bg:#0a0d1a; --ui:#ffffff; --accent:#7a4bd4; --mint:#00ff95; --blue:#2b7bd4; }
@@ -50,336 +50,288 @@
   <div class="banner" id="startBanner" aria-modal="true" role="dialog">
     <div class="card">
       <div style="font-size:42px;margin-bottom:6px;">🍪⚡🛒</div>
-      <h1 class="start-title">Mondelez Runner — 3D BRIGHT v2</h1>
+      <h1 class="start-title">Mondelez Runner — 3D BRIGHT v2.1</h1>
       <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
-      <div class="mini">Яркая 3D-версия: светлее сцена, метки над бонусами/препятствиями, свечение «Препак», понятная сетка дороги. Двойной прыжок с coyote+buffer.</div>
+      <div class="mini">Яркая 3D-версия без модульных скриптов — запускается даже в in‑app браузерах. Метки над бонусами/препятствиями, свечение «Препак», сетка дороги. Двойной прыжок с coyote+buffer.</div>
       <div class="start-actions"><button class="btnlg" id="startBtn">START</button></div>
     </div>
   </div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js';
-import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/postprocessing/UnrealBloomPass.js';
+<!-- Classic (non‑module) Three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
+<script>
+(function(){
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.35;
+  document.body.prepend(renderer.domElement);
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.35; // brighter
-document.body.prepend(renderer.domElement);
+  // Scene & camera
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0d1a);
+  scene.fog = new THREE.Fog(0x0a0d1a, 12, 30);
+  const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, 0.1, 200);
+  camera.position.set(0.2, 2.0, 6.5);
 
-// Scene & Camera
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0d1a);
-scene.fog = new THREE.Fog(0x0a0d1a, 12, 30);
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, 0.1, 200);
-camera.position.set(0.2, 2.0, 6.5);
+  // Lights
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(5,6,3); key.castShadow=true; key.shadow.mapSize.set(1024,1024);
+  const fill = new THREE.HemisphereLight(0x99ddff, 0x403020, 1.0);
+  const rim = new THREE.DirectionalLight(0x66aaff, 0.8); rim.position.set(-4,3,-2);
+  scene.add(key, fill, rim);
 
-// Postprocessing
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.8, 0.85);
-composer.addPass(bloom);
+  // Grid road
+  const gridTex = new THREE.CanvasTexture(makeGridTexture());
+  gridTex.wrapS = gridTex.wrapT = THREE.RepeatWrapping; gridTex.repeat.set(1, 20);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(8, 120), new THREE.MeshStandardMaterial({ map: gridTex, color: 0xffffff, metalness:0.2, roughness:0.9 }));
+  road.rotation.x = -Math.PI/2; road.position.z = -40; road.receiveShadow=true; scene.add(road);
 
-// Lights: key + fill + rim
-const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(5,6,3); key.castShadow=true; key.shadow.mapSize.set(1024,1024);
-const fill = new THREE.HemisphereLight(0x99ddff, 0x403020, 1.0);
-const rim = new THREE.DirectionalLight(0x66aaff, 0.8); rim.position.set(-4,3,-2);
-scene.add(key, fill, rim);
-
-// Ground grid (depth cues)
-const gridTex = new THREE.CanvasTexture(makeGridTexture());
-gridTex.wrapS = gridTex.wrapT = THREE.RepeatWrapping;
-gridTex.repeat.set(1, 20);
-const road = new THREE.Mesh(
-  new THREE.PlaneGeometry(8, 120),
-  new THREE.MeshStandardMaterial({ map: gridTex, color: 0xffffff, metalness:0.2, roughness:0.9 })
-);
-road.rotation.x = -Math.PI/2; road.position.z = -40; road.receiveShadow = true; scene.add(road);
-
-// Oreo
-function createOreo(){
-  const g1 = new THREE.CylinderGeometry(0.52,0.52,0.2, 64);
-  const g2 = new THREE.CylinderGeometry(0.49,0.49,0.09, 48);
-  const matBrown = new THREE.MeshStandardMaterial({ color: 0x3b2f2f, metalness:0.35, roughness:0.55 });
-  const matCream = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness:0.05, roughness:0.35, emissive:0x222222, emissiveIntensity:0.05 });
-  const top = new THREE.Mesh(g1, matBrown);
-  const bot = new THREE.Mesh(g1, matBrown);
-  const cream = new THREE.Mesh(g2, matCream);
-  top.castShadow=bot.castShadow=cream.castShadow=true;
-  top.position.y = 0.14; bot.position.y = -0.14; cream.position.y = 0;
-  const group = new THREE.Group();
-  group.add(top, bot, cream);
-  // Eyes
-  const eyeGeo = new THREE.SphereGeometry(0.038, 16, 12);
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness:0.2, roughness:0.3 });
-  const e1 = new THREE.Mesh(eyeGeo, eyeMat);
-  const e2 = new THREE.Mesh(eyeGeo, eyeMat);
-  e1.position.set(-0.12, 0.06, 0.49); e2.position.set(0.12, 0.06, 0.49);
-  group.add(e1,e2);
-  return group;
-}
-const player = createOreo();
-player.position.set(0, 0.68, 0); scene.add(player);
-// Shield halo sprite (hidden by default)
-const haloTex = new THREE.CanvasTexture(makeHaloTexture());
-const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color: 0x55ddff, transparent:true, opacity:0 }));
-halo.scale.set(2.2,2.2,1); player.add(halo); halo.position.set(0,0,0.1);
-
-// Labels: canvas->texture sprites
-function makeLabelSprite(text, color){
-  const can = document.createElement('canvas'); const s=256; can.width=can.height=s; const c=can.getContext('2d');
-  c.fillStyle='rgba(255,255,255,.98)'; round(c, 16, 180, s-32, 56, 14); c.fill();
-  c.strokeStyle=color; c.lineWidth=6; round(c, 16, 180, s-32, 56, 14); c.stroke();
-  c.fillStyle=color; c.font='bold 36px ui-sans-serif, system-ui'; c.textAlign='center'; c.textBaseline='middle';
-  c.fillText(text, s/2, s-32-28+28);
-  const tex=new THREE.CanvasTexture(can);
-  const spr=new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest:true, transparent:true }));
-  spr.scale.set(1.8,1.2,1);
-  spr.userData.dispose=()=>tex.dispose();
-  return spr;
-}
-function round(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
-
-// Obstacles & goodies
-const obstacles=[], goodies=[], crumbs=[];
-function spawnObstacle(){
-  const type = Math.random()<0.5? 'cube' : (Math.random()<0.5?'fall':'wall');
-  let mesh, label;
-  if(type==='cube'){
-    const s = 0.55 + Math.random()*0.32;
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xff4b6e }));
-    mesh.position.set((Math.random()*2-1)*1.6, 0.28, -60);
-    label = makeLabelSprite('OOS', '#ff4b6e');
-  }else if(type==='fall'){
-    const s = 0.5 + Math.random()*0.3;
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xe8a36b }));
-    mesh.userData.fall = true; mesh.userData.vy = 0.03 + Math.random()*0.02;
-    mesh.position.set((Math.random()*2-1)*1.6, 3 + Math.random()*1.5, -60);
-    label = makeLabelSprite('Нет стока', '#e8a36b');
-  }else{
-    const w = 0.9 + Math.random()*0.5, h = 0.38 + Math.random()*0.2;
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.6), new THREE.MeshStandardMaterial({ color: 0xffb84b }));
-    mesh.position.set((Math.random()*2-1)*1.6, h/2, -60);
-    label = makeLabelSprite('ERP упал', '#ffb84b');
+  // Player Oreo
+  function createOreo(){
+    const g1 = new THREE.CylinderGeometry(0.52,0.52,0.2, 64);
+    const g2 = new THREE.CylinderGeometry(0.49,0.49,0.09, 48);
+    const matBrown = new THREE.MeshStandardMaterial({ color: 0x3b2f2f, metalness:0.35, roughness:0.55 });
+    const matCream = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness:0.05, roughness:0.35, emissive:0x222222, emissiveIntensity:0.05 });
+    const top = new THREE.Mesh(g1, matBrown);
+    const bot = new THREE.Mesh(g1, matBrown);
+    const cream = new THREE.Mesh(g2, matCream);
+    top.castShadow=bot.castShadow=cream.castShadow=true;
+    top.position.y = 0.14; bot.position.y = -0.14; cream.position.y = 0;
+    const group = new THREE.Group(); group.add(top, bot, cream);
+    const eyeGeo = new THREE.SphereGeometry(0.038, 16, 12);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness:0.2, roughness:0.3 });
+    const e1 = new THREE.Mesh(eyeGeo, eyeMat); const e2 = new THREE.Mesh(eyeGeo, eyeMat);
+    e1.position.set(-0.12, 0.06, 0.49); e2.position.set(0.12, 0.06, 0.49); group.add(e1,e2);
+    return group;
   }
-  mesh.castShadow=true; scene.add(mesh);
-  label.position.set(mesh.position.x, mesh.position.y+0.7, mesh.position.z);
-  scene.add(label);
-  mesh.userData.label=label; obstacles.push(mesh);
-}
-function spawnGoodie(){
-  const r = Math.random();
-  const type = r<0.5 ? 'discount' : (r<0.8 ? 'prepack':'erid');
-  let color = type==='discount' ? 0x2b7bd4 : (type==='prepack' ? 0x00d6ff : 0x7a4bd4);
-  const mesh = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.07, 16, 24), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.2 }));
-  mesh.position.set((Math.random()*2-1)*1.6, 1.0 + Math.random()*0.8, -58);
-  mesh.castShadow=true; mesh.userData.type=type;
-  const label = makeLabelSprite(type==='discount'?'Допскидка':(type==='prepack'?'Препак (щит)':'Без ERID'), '#'+color.toString(16).padStart(6,'0'));
-  label.position.set(mesh.position.x, mesh.position.y+0.9, mesh.position.z);
-  scene.add(mesh, label); mesh.userData.label=label;
-  goodies.push(mesh);
-}
-function spawnCrumbs(){
-  const n = 6 + Math.floor(Math.random()*4);
-  for(let i=0;i<n;i++){
-    const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), new THREE.MeshStandardMaterial({ color: 0x6d3b2a }));
-    s.position.set((Math.random()*2-1)*1.6, 0.74 + Math.sin(i/n*Math.PI)*0.5, -56 - i*0.9);
-    s.castShadow=true; crumbs.push(s); scene.add(s);
+  const player = createOreo(); player.position.set(0,0.68,0); scene.add(player);
+  const haloTex = new THREE.CanvasTexture(makeHaloTexture());
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color: 0x55ddff, transparent:true, opacity:0 }));
+  halo.scale.set(2.2,2.2,1); player.add(halo); halo.position.set(0,0,0.1);
+
+  // Label sprites
+  function makeLabelSprite(text, color){
+    const can = document.createElement('canvas'); const s=256; can.width=can.height=s; const c=can.getContext('2d');
+    c.fillStyle='rgba(255,255,255,.98)'; round(c, 16, 180, s-32, 56, 14); c.fill();
+    c.strokeStyle=color; c.lineWidth=6; round(c, 16, 180, s-32, 56, 14); c.stroke();
+    c.fillStyle=color; c.font='bold 36px ui-sans-serif, system-ui'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(text, s/2, s-32-28+28);
+    const tex=new THREE.CanvasTexture(can);
+    const spr=new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest:true, transparent:true }));
+    spr.scale.set(1.8,1.2,1); spr.userData.dispose=()=>tex.dispose();
+    return spr;
   }
-}
+  function round(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 
-// Game state
-const SPEED_UP = 1.05;
-const levels=[
-  { name:'Склад РЦ', seconds:24, speed:0.25*SPEED_UP },
-  { name:'Магазин', seconds:28, speed:0.28*SPEED_UP },
-  { name:'Переговорка', seconds:32, speed:0.30*SPEED_UP }
-];
-let levelIdx=0, timeLeft=levels[0].seconds, speed=levels[0].speed, t=0;
-let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
-
-// HUD
-const hud={
-  level: document.getElementById('levelLabel'),
-  score: document.getElementById('scoreLabel'),
-  best: document.getElementById('bestLabel'),
-  status: document.getElementById('statusLabel'),
-  toast: document.getElementById('toast'),
-  count: document.getElementById('count'),
-  start: document.getElementById('startBanner'),
-  startBtn: document.getElementById('startBtn'),
-  pauseBtn: document.getElementById('pauseBtn'),
-  restartBtn: document.getElementById('restartBtn'),
-  hint: document.getElementById('hint')
-};
-function toast(msg){ hud.toast.textContent=msg; hud.toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>hud.toast.classList.remove('show'), 2000); }
-
-// Physics / Jump (coyote + buffer stronger)
-let vy=0, groundY=0.68, jumps=0, onGround=true;
-let coyoteTimer=0, jumpBufferTimer=0; const COYOTE=0.18, BUFFER=0.18; // more forgiving
-const G = 0.0175;
-function requestJump(){ jumpBufferTimer = BUFFER; tryJump(); }
-function tryJump(){
-  if((onGround || coyoteTimer>0) && jumps===0){ vy=0.40; jumps=1; onGround=false; coyoteTimer=0; jumpBufferTimer=0; return; }
-  if(!onGround && jumps===1){ vy=0.36; jumps=2; jumpBufferTimer=0; return; }
-}
-
-// Timers
-let spawnT=0.3, goodieT=0.8, crumbT=0.25;
-// Boosters
-let boostTimer=0, shieldTimer=0, speedBoost=1.0;
-
-// Loop
-let last=performance.now(), running=false, paused=false;
-function loop(){
-  const now=performance.now(); const dt=Math.min(0.05,(now-last)/1000); last=now;
-  if(running && !paused) update(dt);
-  composer.render();
-  requestAnimationFrame(loop);
-}
-loop();
-
-function update(dt){
-  t += dt; timeLeft -= dt;
-  if(timeLeft<=0){ levelIdx++; if(levelIdx>=levels.length){ win(); return; } levelUp(levelIdx); }
-
-  // background movement
-  road.position.z += speed*160*dt*(boostTimer>0?1.6:1.0); if(road.position.z>-20) road.position.z = -40;
-  gridTex.offset.y -= dt* (speed*0.7 + (boostTimer>0?0.5:0.0));
-
-  // spawns
-  spawnT-=dt; if(spawnT<=0){ spawnObstacle(); spawnT= 0.7 + Math.random()*0.8; }
-  goodieT-=dt; if(goodieT<=0){ spawnGoodie(); goodieT= 1.0 + Math.random()*0.8; }
-  crumbT-=dt; if(crumbT<=0){ spawnCrumbs(); crumbT= 0.9 + Math.random()*0.7; }
-
-  // move towards camera
-  const packs=[obstacles, goodies, crumbs];
-  for(const arr of packs){
-    for(const m of arr){
-      m.position.z += speed*160*dt*(boostTimer>0?1.6:1.0);
-      if(m.userData.fall){ m.position.y = Math.max(0.28, m.position.y - (m.userData.vy||0.03)); }
-      if(m.userData.label){ m.userData.label.position.set(m.position.x, m.position.y+0.9, m.position.z); }
+  // Entities
+  const obstacles=[], goodies=[], crumbs=[];
+  function spawnObstacle(){
+    const type = Math.random()<0.5? 'cube' : (Math.random()<0.5?'fall':'wall');
+    let mesh, label;
+    if(type==='cube'){
+      const s = 0.55 + Math.random()*0.32;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xff4b6e }));
+      mesh.position.set((Math.random()*2-1)*1.6, 0.28, -60);
+      label = makeLabelSprite('OOS', '#ff4b6e');
+    }else if(type==='fall'){
+      const s = 0.5 + Math.random()*0.3;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xe8a36b }));
+      mesh.userData.fall = true; mesh.userData.vy = 0.03 + Math.random()*0.02;
+      mesh.position.set((Math.random()*2-1)*1.6, 3 + Math.random()*1.5, -60);
+      label = makeLabelSprite('Нет стока', '#e8a36b');
+    }else{
+      const w = 0.9 + Math.random()*0.5, h = 0.38 + Math.random()*0.2;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.6), new THREE.MeshStandardMaterial({ color: 0xffb84b }));
+      mesh.position.set((Math.random()*2-1)*1.6, h/2, -60);
+      label = makeLabelSprite('ERP упал', '#ffb84b');
     }
-    for(let i=arr.length-1;i>=0;i--){
-      if(arr[i].position.z>6){ if(arr[i].userData.label){ scene.remove(arr[i].userData.label); arr[i].userData.label.material.map.dispose?.(); } scene.remove(arr[i]); arr.splice(i,1); }
+    mesh.castShadow=true; scene.add(mesh);
+    label.position.set(mesh.position.x, mesh.position.y+0.7, mesh.position.z); scene.add(label);
+    mesh.userData.label=label; obstacles.push(mesh);
+  }
+  function spawnGoodie(){
+    const r = Math.random();
+    const type = r<0.5 ? 'discount' : (r<0.8 ? 'prepack':'erid');
+    let color = type==='discount' ? 0x2b7bd4 : (type==='prepack' ? 0x00d6ff : 0x7a4bd4);
+    const mesh = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.07, 16, 24), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.2 }));
+    mesh.position.set((Math.random()*2-1)*1.6, 1.0 + Math.random()*0.8, -58);
+    mesh.castShadow=true; mesh.userData.type=type;
+    const label = makeLabelSprite(type==='discount'?'Допскидка':(type==='prepack'?'Препак (щит)':'Без ERID'), '#'+color.toString(16).padStart(6,'0'));
+    label.position.set(mesh.position.x, mesh.position.y+0.9, mesh.position.z);
+    scene.add(mesh, label); mesh.userData.label=label; goodies.push(mesh);
+  }
+  function spawnCrumbs(){
+    const n = 6 + Math.floor(Math.random()*4);
+    for(let i=0;i<n;i++){
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), new THREE.MeshStandardMaterial({ color: 0x6d3b2a }));
+      s.position.set((Math.random()*2-1)*1.6, 0.74 + Math.sin(i/n*Math.PI)*0.5, -56 - i*0.9);
+      s.castShadow=true; crumbs.push(s); scene.add(s);
     }
   }
 
-  // gravity
-  vy -= G * (1 + (jumps===2?0.2:0));
-  player.position.y += vy;
-  if(player.position.y<=groundY){ player.position.y = groundY; if(!onGround){ onGround=true; jumps=0; } }
-  else { if(onGround){ onGround=false; coyoteTimer=COYOTE; } }
-  if(coyoteTimer>0) coyoteTimer -= dt;
-  if(jumpBufferTimer>0){ jumpBufferTimer -= dt; if(onGround){ tryJump(); } }
+  // Game
+  const SPEED_UP = 1.05;
+  const levels=[
+    { name:'Склад РЦ', seconds:24, speed:0.25*SPEED_UP },
+    { name:'Магазин', seconds:28, speed:0.28*SPEED_UP },
+    { name:'Переговорка', seconds:32, speed:0.30*SPEED_UP }
+  ];
+  let levelIdx=0, timeLeft=levels[0].seconds, speed=levels[0].speed, t=0;
+  let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
 
-  // collisions
-  const p=player.position;
-  for(let i=obstacles.length-1;i>=0;i--){
-    const m=obstacles[i];
-    if(Math.abs(m.position.z-p.z)<0.55 && Math.abs(m.position.x-p.x)<0.65 && Math.abs(m.position.y-p.y)<0.5){
-      if(shieldTimer>0){ shieldTimer=0; removeWithLabel(m); obstacles.splice(i,1); toast('Щит спас!'); }
-      else { gameOver(); return; }
+  // HUD
+  const hud={
+    level: document.getElementById('levelLabel'),
+    score: document.getElementById('scoreLabel'),
+    best: document.getElementById('bestLabel'),
+    status: document.getElementById('statusLabel'),
+    toast: document.getElementById('toast'),
+    count: document.getElementById('count'),
+    start: document.getElementById('startBanner'),
+    startBtn: document.getElementById('startBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    restartBtn: document.getElementById('restartBtn'),
+    hint: document.getElementById('hint')
+  };
+  function toast(msg){ hud.toast.textContent=msg; hud.toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>hud.toast.classList.remove('show'), 2000); }
+
+  // Physics / jump
+  let vy=0, groundY=0.68, jumps=0, onGround=true;
+  let coyoteTimer=0, jumpBufferTimer=0; const COYOTE=0.18, BUFFER=0.18;
+  const G = 0.0175;
+  function requestJump(){ jumpBufferTimer = BUFFER; tryJump(); }
+  function tryJump(){
+    if((onGround || coyoteTimer>0) && jumps===0){ vy=0.40; jumps=1; onGround=false; coyoteTimer=0; jumpBufferTimer=0; return; }
+    if(!onGround && jumps===1){ vy=0.36; jumps=2; jumpBufferTimer=0; return; }
+  }
+
+  // Timers & boosters
+  let spawnT=0.3, goodieT=0.8, crumbT=0.25;
+  let boostTimer=0, shieldTimer=0, speedBoost=1.0;
+
+  // Loop
+  let last=performance.now(), running=false, paused=false;
+  function loop(){
+    const now=performance.now(); const dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(running && !paused) update(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  function update(dt){
+    t += dt; timeLeft -= dt;
+    if(timeLeft<=0){ levelIdx++; if(levelIdx>=levels.length){ win(); return; } levelUp(levelIdx); }
+
+    road.position.z += speed*160*dt*(boostTimer>0?1.6:1.0); if(road.position.z>-20) road.position.z = -40;
+    gridTex.offset.y -= dt*(speed*0.7 + (boostTimer>0?0.5:0));
+
+    spawnT-=dt; if(spawnT<=0){ spawnObstacle(); spawnT=0.7+Math.random()*0.8; }
+    goodieT-=dt; if(goodieT<=0){ spawnGoodie(); goodieT=1.0+Math.random()*0.8; }
+    crumbT-=dt; if(crumbT<=0){ spawnCrumbs(); crumbT=0.9+Math.random()*0.7; }
+
+    const packs=[obstacles, goodies, crumbs];
+    for(const arr of packs){
+      for(const m of arr){
+        m.position.z += speed*160*dt*(boostTimer>0?1.6:1.0);
+        if(m.userData.fall){ m.position.y = Math.max(0.28, m.position.y - (m.userData.vy||0.03)); }
+        if(m.userData.label){ m.userData.label.position.set(m.position.x, m.position.y+0.9, m.position.z); }
+      }
+      for(let i=arr.length-1;i>=0;i--){
+        if(arr[i].position.z>6){ if(arr[i].userData.label){ scene.remove(arr[i].userData.label); arr[i].userData.label.material.map.dispose && arr[i].userData.label.material.map.dispose(); } scene.remove(arr[i]); arr.splice(i,1); }
+      }
     }
-  }
-  for(let i=goodies.length-1;i>=0;i--){
-    const m=goodies[i];
-    if(m.position.distanceTo(p)<0.8){
-      const type=m.userData.type;
-      if(type==='discount'){ speedBoost=1.6; boostTimer=2.8; toast('Допскидка +3% 🚀'); }
-      else if(type==='prepack'){ shieldTimer=4.0; halo.material.opacity=0.9; toast('Препак — щит'); }
-      else { toast('Согласовано без ERID ✨'); }
-      removeWithLabel(m); goodies.splice(i,1);
+
+    // gravity
+    vy -= G * (1 + (jumps===2?0.2:0));
+    player.position.y += vy;
+    if(player.position.y<=groundY){ player.position.y=groundY; if(!onGround){ onGround=true; jumps=0; } }
+    else { if(onGround){ onGround=false; coyoteTimer=COYOTE; } }
+    if(coyoteTimer>0) coyoteTimer-=dt;
+    if(jumpBufferTimer>0){ jumpBufferTimer-=dt; if(onGround){ tryJump(); } }
+
+    // collisions
+    const p=player.position;
+    for(let i=obstacles.length-1;i>=0;i--){
+      const m=obstacles[i];
+      if(Math.abs(m.position.z-p.z)<0.55 && Math.abs(m.position.x-p.x)<0.65 && Math.abs(m.position.y-p.y)<0.5){
+        if(shieldTimer>0){ shieldTimer=0; removeWithLabel(m); obstacles.splice(i,1); toast('Щит спас!'); }
+        else { gameOver(); return; }
+      }
     }
+    for(let i=goodies.length-1;i>=0;i--){
+      const m=goodies[i];
+      if(m.position.distanceTo(p)<0.8){
+        const type=m.userData.type;
+        if(type==='discount'){ speedBoost=1.6; boostTimer=2.8; toast('Допскидка +3% 🚀'); }
+        else if(type==='prepack'){ shieldTimer=4.0; halo.material.opacity=0.9; toast('Препак — щит'); }
+        else { toast('Согласовано без ERID ✨'); }
+        removeWithLabel(m); goodies.splice(i,1);
+      }
+    }
+    for(let i=crumbs.length-1;i>=0;i--){
+      const m=crumbs[i]; if(m.position.distanceTo(p)<0.7){ score++; scene.remove(m); crumbs.splice(i,1); }
+    }
+
+    if(shieldTimer>0){ halo.material.opacity = Math.min(0.95, 0.5 + Math.sin(t*8)*0.3); } else { halo.material.opacity = Math.max(0, halo.material.opacity - dt*2); }
+
+    const base = levels[levelIdx].speed + Math.min(0.08, Math.floor(t/12)*0.012);
+    speed = base * (boostTimer>0?1.6:1.0);
+    if(boostTimer>0) boostTimer-=dt;
+    if(shieldTimer>0) shieldTimer-=dt;
+
+    player.rotation.y = Math.sin(t*0.8)*0.08;
+
+    hud.score.textContent='Очки (крошки): '+score;
+    hud.best.textContent='Рекорд: '+Math.max(best,score);
+    hud.status.textContent=`Осталось: ${Math.max(0,Math.ceil(timeLeft))}с` + (shieldTimer>0?' • Щит':'') + (boostTimer>0?' • Ускорение':'');
   }
-  for(let i=crumbs.length-1;i>=0;i--){
-    const m=crumbs[i]; if(m.position.distanceTo(p)<0.7){ score++; scene.remove(m); crumbs.splice(i,1); }
+
+  function removeWithLabel(m){ if(m.userData.label){ scene.remove(m.userData.label); m.userData.label.material.map.dispose && m.userData.label.material.map.dispose(); } scene.remove(m); }
+
+  function levelUp(i){ timeLeft=levels[i].seconds; toast('Уровень: '+levels[i].name+' • Двойной прыжок'); hud.level.textContent='Уровень: '+levels[i].name; }
+
+  function start(){
+    hud.start.classList.add('hidden'); document.getElementById('hint').style.display = isTouch ? 'block':'none';
+    levelIdx=0; timeLeft=levels[0].seconds; t=0; score=0;
+    for(const a of [obstacles, goodies, crumbs]){ a.forEach(m=>removeWithLabel(m)); a.length=0; }
+    player.position.set(0,0.68,0); vy=0; jumps=0; onGround=true; coyoteTimer=0;
+    paused=false; running=false;
+    let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
+    const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick,600);} else { hud.count.classList.add('hidden'); running=true; } };
+    setTimeout(tick,600);
   }
 
-  // halo fade
-  if(shieldTimer>0){ halo.material.opacity = Math.min(0.95, 0.5 + Math.sin(t*8)*0.3); } else { halo.material.opacity = Math.max(0, halo.material.opacity - dt*2); }
+  function gameOver(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_crumbs',best); toast('Игра окончена'); setTimeout(start,1200); }
+  function win(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_crumbs',best); toast('Год закрыт на 120% KPI 🎉'); setTimeout(start,1500); }
 
-  // speed
-  const base = levels[levelIdx].speed + Math.min(0.08, Math.floor(t/12)*0.012);
-  speed = base * (boostTimer>0?1.6:1.0);
-  if(boostTimer>0) boostTimer-=dt;
-  if(shieldTimer>0) shieldTimer-=dt;
+  function onJump(){ requestJump(); }
+  window.addEventListener('keydown', e=>{ if(e.code==='Space'||e.code==='ArrowUp'){ e.preventDefault(); onJump(); } if(e.code==='KeyP'){ paused=!paused; }});
+  renderer.domElement.addEventListener('pointerdown', onJump, {passive:true});
+  if(isTouch){ renderer.domElement.addEventListener('touchstart', onJump, {passive:true}); }
 
-  // subtle look
-  player.rotation.y = Math.sin(t*0.8)*0.08;
+  hud.startBtn.addEventListener('click', start);
+  hud.pauseBtn.addEventListener('click', ()=>{ paused=!paused; });
+  hud.restartBtn.addEventListener('click', start);
 
-  // UI
-  hud.score.textContent = 'Очки (крошки): ' + score;
-  hud.best.textContent = 'Рекорд: ' + Math.max(best, score);
-  hud.status.textContent = `Осталось: ${Math.max(0, Math.ceil(timeLeft))}с` + (shieldTimer>0?' • Щит':'') + (boostTimer>0?' • Ускорение':'');
-}
+  window.addEventListener('resize', ()=>{ const w=window.innerWidth, h=window.innerHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); });
 
-function removeWithLabel(m){ if(m.userData.label){ scene.remove(m.userData.label); m.userData.label.material.map.dispose?.(); } scene.remove(m); }
+  // Utils
+  function makeGridTexture(){ const c=document.createElement('canvas'); c.width=256; c.height=256; const g=c.getContext('2d');
+    g.fillStyle='#12162f'; g.fillRect(0,0,256,256); g.strokeStyle='rgba(255,255,255,.15)'; g.lineWidth=2;
+    for(let y=0;y<256;y+=32){ g.beginPath(); g.moveTo(0,y); g.lineTo(256,y); g.stroke(); }
+    g.strokeStyle='rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(128,0); g.lineTo(128,256); g.stroke(); return c; }
+  function makeHaloTexture(){ const c=document.createElement('canvas'); c.width=256; c.height=256; const g=c.getContext('2d');
+    const grad=g.createRadialGradient(128,128,40,128,128,128); grad.addColorStop(0,'rgba(85,221,255,.35)'); grad.addColorStop(1,'rgba(85,221,255,0)'); g.fillStyle=grad; g.fillRect(0,0,256,256); return c; }
 
-function levelUp(i){
-  timeLeft = levels[i].seconds;
-  toast('Уровень: '+levels[i].name+' • Двойной прыжок');
-  hud.level.textContent = 'Уровень: '+levels[i].name;
-}
-
-function start(){
-  hud.start.classList.add('hidden'); document.getElementById('hint').style.display = isTouch ? 'block':'none';
-  levelIdx=0; timeLeft=levels[0].seconds; t=0; score=0;
-  // cleanup
-  for(const a of [obstacles, goodies, crumbs]){ a.forEach(m=>removeWithLabel(m)); a.length=0; }
-  player.position.set(0, groundY, 0); vy=0; jumps=0; onGround=true; coyoteTimer=0;
-  paused=false; running=false;
-  // countdown
-  let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
-  const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick, 600);} else { hud.count.classList.add('hidden'); running=true; } };
-  setTimeout(tick, 600);
-}
-
-function gameOver(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_crumbs', best); toast('Игра окончена'); setTimeout(start, 1200); }
-function win(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_crumbs', best); toast('Год закрыт на 120% KPI 🎉'); setTimeout(start, 1500); }
-
-// Input
-function onJump(){ requestJump(); }
-window.addEventListener('keydown', e=>{ if(e.code==='Space'||e.code==='ArrowUp'){ e.preventDefault(); onJump(); } if(e.code==='KeyP'){ paused=!paused; }});
-renderer.domElement.addEventListener('pointerdown', onJump, {passive:true});
-if(isTouch){ renderer.domElement.addEventListener('touchstart', onJump, {passive:true}); }
-
-hud.startBtn.addEventListener('click', start);
-hud.pauseBtn.addEventListener('click', ()=>{ paused=!paused; });
-hud.restartBtn.addEventListener('click', start);
-
-// Resize
-window.addEventListener('resize', ()=>{
-  const w = window.innerWidth, h=window.innerHeight;
-  renderer.setSize(w,h); composer.setSize(w,h);
-  camera.aspect=w/h; camera.updateProjectionMatrix();
-});
-
-// Utils
-function makeGridTexture(){
-  const c=document.createElement('canvas'); c.width=256; c.height=256; const g=c.getContext('2d');
-  g.fillStyle='#12162f'; g.fillRect(0,0,256,256);
-  g.strokeStyle='rgba(255,255,255,.15)'; g.lineWidth=2;
-  for(let y=0;y<256;y+=32){ g.beginPath(); g.moveTo(0,y); g.lineTo(256,y); g.stroke(); }
-  g.strokeStyle='rgba(255,255,255,.35)';
-  g.beginPath(); g.moveTo(128,0); g.lineTo(128,256); g.stroke();
-  return c;
-}
-function makeHaloTexture(){
-  const c=document.createElement('canvas'); c.width=256; c.height=256; const g=c.getContext('2d');
-  const grad=g.createRadialGradient(128,128,40,128,128,128);
-  grad.addColorStop(0,'rgba(85,221,255,.35)'); grad.addColorStop(1,'rgba(85,221,255,0)');
-  g.fillStyle=grad; g.fillRect(0,0,256,256); return c;
-}
-
-</script>
+  // Init HUD
+  hud.level.textContent='Уровень: —'; hud.score.textContent='Очки (крошки): 0'; hud.best.textContent='Рекорд: '+best; hud.status.textContent='';
+})();</script>
 </body>
 </html>
