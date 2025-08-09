@@ -81,7 +81,7 @@
   <div class="softkeys">
     <button class="btn" id="softLeft">◀</button>
     <button class="btn" id="softRight">▶</button>
-    
+    <button class="btn" id="softSlide">SLIDE</button>
     <button class="btn" id="softJump">JUMP</button>
   </div>
   <div class="toasts" id="toasts"></div>
@@ -91,7 +91,7 @@
   </div>
   <div class="titleCard" id="titleCard">
      <div class="title">MONDELEZ RUNNER</div>
-     <div class="subtitle">КАМ мчится к закрытию года. Собирай «шоколадные крошки», используй <b>двойной прыжок</b> избегай «ERP упал» и «нет стока». Пройди 3 уровня и закрой год на <b>120% KPI</b>.</div>
+     <div class="subtitle">КАМ мчится к закрытию года. Собирай «шоколадные крошки», используй <b>двойной прыжок</b> и <b>слайд</b>, избегай «ERP упал» и «нет стока». Пройди 3 уровня и закрой год на <b>120% KPI</b>.</div>
      <button class="startBtn" id="startBtn">START</button>
      <div class="credits" id="credits">Developed by: <span id="hackText"></span><span class="cursor"></span></div>
   </div>
@@ -407,7 +407,7 @@ function doJump(){
     SFX.double();
   }
 }
-function doSlide(){ /* disabled */ return; 
+function doSlide(){
   if(player.onGround){
     player.sliding = true;
     player.slideUntil = performance.now() + SLIDE_TIME;
@@ -426,7 +426,7 @@ window.addEventListener('keydown', (e)=>{
   if(e.code==='ArrowLeft' || e.code==='KeyA') moveLane(-1);
   else if(e.code==='ArrowRight' || e.code==='KeyD') moveLane(+1);
   else if(e.code==='ArrowUp' || e.code==='Space') doJump();
-  // slide disabled
+  else if(e.code==='ArrowDown' || e.code==='KeyS') doSlide();
   else if(e.code==='KeyP'){ togglePause(); }
 });
 
@@ -450,7 +450,7 @@ window.addEventListener('touchend', (e)=>{
   if(adx>ady && adx>SW){
     moveLane(dx<0?-1:+1);
   }else if(ady>adx && ady>SW){
-    if(dy<0) doJump(); else {/* slide disabled */}
+    if(dy<0) doJump(); else doSlide();
   }else{
     // tap => jump
     doJump();
@@ -482,12 +482,22 @@ function showOverlay(txt){
 }
 function hideOverlay(){ overlay.style.display='none'; }
 
-function startGame(){ titleCard.style.display='none'; if(!SFX.enabled){ SFX.enable(); btnMute.textContent='Звук: вкл'; } startCountdown(); }
-startBtn.onclick = ()=>{ startGame(); };
-startBtn.addEventListener('pointerdown', ()=>{ startGame(); }, {once:false});
-// Global fallbacks
-window.addEventListener('keydown', (e)=>{ if(state==='TITLE' && (e.code==='Space'||e.code==='Enter'||e.code==='ArrowUp')){ startGame(); } }, {passive:true});
-window.addEventListener('pointerdown', (e)=>{ if(state==='TITLE'){ startGame(); } }, {once:true, passive:true});
+/* replaced by robust beginGame() */
+
+// --- robust START handlers (fallbacks across browsers/messengers) ---
+function beginGame(){
+  try { titleCard.style.display='none'; } catch(e){}
+  try { startCountdown(); if(!SFX.enabled){ try{ SFX.enable(); }catch(e){} } } catch(e){ console.error(e); showToast('Ошибка старта: '+e, 'bad'); }
+}
+// Attach to button if present
+if(startBtn){ startBtn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); beginGame(); }, {once:true}); }
+// Global fallbacks: any first user gesture starts the game
+window.addEventListener('keydown', (e)=>{
+  if(state==='TITLE' && (e.code==='Space' || e.code==='Enter' || e.code==='ArrowUp')){ e.preventDefault(); beginGame(); }
+}, {passive:false});
+document.addEventListener('pointerdown', ()=>{ if(state==='TITLE') beginGame(); }, {once:true, passive:true});
+document.addEventListener('touchstart', ()=>{ if(state==='TITLE') beginGame(); }, {once:true, passive:true});
+
 function startCountdown(){
   state='COUNTDOWN';
   countdown=3;
@@ -607,7 +617,7 @@ function update(now){
         showToast('Уровень пройден', 'ok');
         setTimeout(()=>{
           hideOverlay();
-          startCountdown();
+          startCountdown(); if(!SFX.enabled){ try{ SFX.enable(); }catch(e){} }
         }, 500);
       }
     }
@@ -732,7 +742,7 @@ function restartGame(){
   overlay.style.display='none';
   titleCard.style.display='none';
   levelIdx=0; score=0; scoreEl.textContent=score;
-  startCountdown();
+  startCountdown(); if(!SFX.enabled){ try{ SFX.enable(); }catch(e){} }
 }
 
 // misc UX: initial overlay hidden, but ensure buttons work in TITLE
