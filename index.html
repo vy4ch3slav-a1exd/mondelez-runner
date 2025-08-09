@@ -1,427 +1,658 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Linear Runner 2D</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Mondelez Runner — 2.5D</title>
 <style>
   :root{
-    --bg1:#0e1222; --bg2:#161c35; --glass:rgba(255,255,255,.06); --glass2:rgba(255,255,255,.12);
-    --violet:#7c4dff; --blue:#0b57cf; --lime:#2dd4bf; --gold:#ffd166; --red:#ff5370; --white:#eef2ff;
+    --bg0:#0a0b10; --bg1:#131627; --bg2:#1b2040;
+    --milka:#7d60c5; --oreo:#0b5fff; --alpen:#6f2c3f;
+    --mint:#00e5a8; --gold:#ffcc33; --rose:#ff5ea8;
+    --ui:#eaf6ff; --danger:#ff3b30; --ok:#32d74b;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--white);font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
-  #c{position:fixed;inset:0;display:block;background:transparent}
-  #ui{position:fixed;inset:0;pointer-events:none}
-  .hud{position:absolute;left:12px;top:12px;display:flex;gap:10px;align-items:center;padding:8px 10px;background:var(--glass);border:1px solid var(--glass2);border-radius:12px;font-weight:700}
-  .badge{padding:4px 8px;border-radius:10px;background:var(--glass2)}
-  #toasts{position:absolute;left:12px;top:64px;max-width:min(520px,92vw)}
-  .toast{margin:8px 0;padding:8px 10px;border-radius:10px;background:var(--glass);border:1px solid var(--glass2);opacity:0;transform:translateY(-6px);animation:in .25s ease forwards}
-  @keyframes in{to{opacity:1;transform:translateY(0)}}
-  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(1000px 500px at 50% 0,rgba(255,255,255,.06),transparent 60%)}
-  .panel{width:min(620px,92vw);padding:24px;border-radius:18px;background:rgba(10,12,24,.72);border:1px solid var(--glass2)}
-  h1{margin:0 0 8px;font-size:clamp(26px,4vw,36px)}
-  .sub{opacity:.9;margin-bottom:14px}
-  .tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-  .tag{padding:6px 10px;border-radius:999px;background:var(--glass2);font-weight:800}
-  button.primary{pointer-events:auto;cursor:pointer;appearance:none;border:none;border-radius:14px;background:linear-gradient(90deg,var(--violet),var(--blue));color:white;font-weight:900;letter-spacing:.6px;padding:12px 18px;box-shadow:0 10px 28px rgba(11,87,207,.28)}
-  .hint{opacity:.85;margin-top:10px;font-size:14px}
-  .blink{animation:bl 1.2s steps(2,end) infinite}
-  @keyframes bl{50%{opacity:.2}}
+  html,body{margin:0;height:100%;background:linear-gradient(180deg,var(--bg1),var(--bg2) 60%,#000 100%);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  #wrap{position:fixed;inset:0;display:grid;place-items:center}
+  canvas{display:block;width:100vw;height:100vh;touch-action:none;image-rendering:crisp-edges}
+  /* UI overlay */
+  #hud{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:8px;padding:10px 14px;pointer-events:none;font-weight:700}
+  .pill{backdrop-filter:blur(8px);background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);padding:8px 12px;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  #toast{position:fixed;left:50%;transform:translateX(-50%);top:64px;opacity:0;transition:.3s;white-space:nowrap}
+  #toast.show{opacity:1}
+  /* Start screen */
+  #start{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(1200px 600px at 50% 40%,rgba(125,96,197,.25),transparent 70%),linear-gradient(180deg,var(--bg1),#000);}
+  .card{width:min(680px,94vw);padding:24px;border-radius:20px;background:rgba(20,22,35,.75);border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .title{font-size:clamp(28px,5vw,42px);font-weight:900;letter-spacing:.5px;margin:0 0 6px;background:linear-gradient(90deg,var(--oreo),#68a0ff,var(--milka));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .subtitle{opacity:.8;margin:0 0 18px}
+  .dev{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.4px;color:#22ffb9;text-shadow:0 0 10px #22ffb980}
+  .hackrow{display:flex;align-items:center;gap:12px;margin:10px 0 18px}
+  .avatar{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:conic-gradient(from 40deg at 50% 50%,#07f,#5cf,#9df);border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 26px rgba(0,0,0,.35)}
+  .avatar span{font-size:22px;font-weight:900;text-shadow:0 1px 18px rgba(255,255,255,.3)}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(180deg,#1d244a,#0f1430);color:#fff;font-weight:800;letter-spacing:.3px;cursor:pointer;box-shadow:0 10px 30px #0008}
+  .btn:hover{filter:brightness(1.08)}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;border-radius:10px;padding:6px 10px;border:1px solid rgba(255,255,255,.16);background:#111a}
+  /* Pause hint */
+  #hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);opacity:.75}
+  /* Debug bubble */
+  #dbg{position:fixed;top:8px;left:50%;transform:translateX(-50%);font:12px ui-monospace;background:#072;padding:6px 10px;border-radius:10px;display:none}
 </style>
 </head>
 <body>
-<canvas id="c" aria-label="2D game canvas"></canvas>
-
-<div id="ui">
-  <div class="hud">
-    <div class="badge">Крошки: <span id="score">0</span></div>
-    <div class="badge">Лучший: <span id="best">0</span></div>
-    <div class="badge">Зона: <span id="zone">Склад</span></div>
-  </div>
-  <div id="toasts"></div>
-
-  <div id="start" class="overlay">
-    <div class="panel">
-      <h1>Linear Runner 2D <span class="blink">█</span></h1>
-      <div class="sub">Простой, быстрый и играбельный. Собирай крошки, перепрыгивай препятствия. Двойной прыжок только в воздухе.</div>
-      <div class="tags">
-        <div class="tag">Λlєксαndr Rødіonσv</div>
-        <div class="tag">Λlєxєy Blіnσv</div>
-      </div>
-      <button id="btnStart" class="primary">START</button>
-      <div class="hint">Мобайл: тап — прыжок (2 раза). ПК: Space/↑ — прыжок.</div>
-    </div>
-  </div>
-
-  <div id="over" class="overlay" style="display:none">
-    <div class="panel">
-      <h1 style="color:var(--red)">Столкновение</h1>
-      <div class="sub">Ты задел препятствие. Попробуй ещё!</div>
-      <button id="btnRetry" class="primary">Заново</button>
-      <div class="hint">Собирай крошки — только они дают очки.</div>
-    </div>
-  </div>
+<div id="wrap"><canvas id="game" width="1280" height="720"></canvas></div>
+<div id="hud">
+  <div class="pill" id="score">Крошки: 0</div>
+  <div class="pill" id="lvl">Уровень: —</div>
+  <div class="pill" id="shield" style="display:none">Щит: 0с</div>
 </div>
+<div id="toast" class="pill">Тост</div>
+<div id="hint" class="pill">Мобайл: тап — прыжок (двойной — в воздухе) • ПК: <span class="kbd">Space/↑</span></div>
+<div id="dbg"></div>
+
+<!-- START SCREEN -->
+<section id="start">
+  <div class="card">
+    <h1 class="title">Mondelez Runner — 2.5D</h1>
+    <p class="subtitle">Собирай шоколадные крошки, избегай «ERP упал» и «OOS». Пройди 3 сцены: <b>РЦ → Магазин → Переговорка</b>.</p>
+    <div class="hackrow">
+      <div class="avatar"><span>CEO</span></div>
+      <div>
+        <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
+        <small style="opacity:.7">«Хакерские CEO» FMCG edition</small>
+      </div>
+    </div>
+    <button id="btnStart" class="btn">START ▶</button>
+    <div style="margin-top:14px;opacity:.8">
+      Управление: <span class="kbd">Space</span>/<span class="kbd">↑</span> или тап по экрану. Двойной прыжок — второй тап в воздухе.
+    </div>
+  </div>
+</section>
 
 <script>
-(function(){
-  const canvas = document.getElementById('c');
+(() => {
+  'use strict';
+
+  // ===== Utilities =====
+  const rnd = (a,b) => Math.random()*(b-a)+a;
+  const clamp = (v, lo, hi) => v<lo?lo : v>hi?hi : v;
+  const now = () => performance.now();
+
+  // ===== Canvas & HiDPI =====
+  const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  let W=0,H=0, DPR=1;
+  const hudScore = document.getElementById('score');
+  const hudLvl = document.getElementById('lvl');
+  const hudShield = document.getElementById('shield');
+  const toast = document.getElementById('toast');
+  const dbg = document.getElementById('dbg');
+  const startScreen = document.getElementById('start');
+  const btnStart = document.getElementById('btnStart');
 
+  let W = 1280, H = 720, DPR = 1;
   function resize(){
-    DPR = Math.min(devicePixelRatio||1, 2);
-    W = Math.floor(innerWidth * DPR);
-    H = Math.floor(innerHeight * DPR);
-    canvas.width = W;
-    canvas.height = H;
-    canvas.style.width = innerWidth + 'px';
-    canvas.style.height = innerHeight + 'px';
+    DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const w = window.innerWidth, h = window.innerHeight;
+    canvas.width = Math.floor(w * DPR);
+    canvas.height = Math.floor(h * DPR);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    W = canvas.width; H = canvas.height;
+    // Reference height for world scale
+    world.scale = H / 720;
   }
-  addEventListener('resize', resize, {passive:true});
-  resize();
+  window.addEventListener('resize', resize, {passive:true});
 
-  // ------- UI
-  const elScore = document.getElementById('score');
-  const elBest  = document.getElementById('best');
-  const elZone  = document.getElementById('zone');
-  const toasts  = document.getElementById('toasts');
-  const startOv = document.getElementById('start');
-  const overOv  = document.getElementById('over');
-  const btnStart= document.getElementById('btnStart');
-  const btnRetry= document.getElementById('btnRetry');
+  // ===== Game State =====
+  const GS = {MENU:0, COUNT:1, PLAY:2, PAUSE:3, OVER:4, WIN:5};
+  let state = GS.MENU;
+  let t0 = now(), dt = 0, lt = t0;
 
-  let best = +localStorage.getItem('runner2d.best') || 0;
-  elBest.textContent = best;
+  // ===== World / Level =====
+  const world = {
+    scale: 1,
+    speed: 7.5,        // base speed
+    speedMul: 1.0,     // dynamic multiplier
+    gravity: 0.78,     // tuned with scale
+    level: 1,
+    crumbs: 0,
+    stageCrumbs: 0,
+    targetPerStage: 18, // crumbs to advance per stage
+    maxLevel: 3,
+    bannerTime: 0,
+    shieldTime: 0,
+    boostTime: 0,
+    confettiTime: 0,
+    msgCooldown: 0,
+  };
 
-  function toast(msg){
-    const d = document.createElement('div');
-    d.className = 'toast';
-    d.textContent = msg;
-    toasts.appendChild(d);
-    setTimeout(()=> d.remove(), 2500);
+  // Difficulty tweak (+4% tempo already baked-in)
+  const DIFF = {
+    coyote: 110,   // ms
+    jumpBuffer: 130,
+    jumpV: 17.2,
+    jump2V: 15.2,
+    maxFall: 28,
+    spawnMin: 800,
+    spawnMax: 1500,
+    crumbEvery: 420, // ms between crumbs spawn attempts
+  };
+
+  // ===== Player (Oreo cookie) =====
+  const player = {
+    x: 0, y: 0, z: 0,
+    w: 70, h: 70,
+    vx: 0, vy: 0,
+    onGround: false,
+    jumps: 0,
+    lastGroundTime: 0,
+    lastJumpPress: 0,
+    invul: 0, // shield seconds
+    blink: 0, // eye blink timer
+  };
+
+  // World lanes (2.5D fake): we just shift Y a little by z (lane depth)
+  const lanes = [0, 1, 2]; // center, back, front (visual only)
+  let lane = 0;
+
+  // Entities
+  const ents = [];
+  function spawnObstacle(kind){
+    // kind: 'box','erp','cart'
+    const s = world.scale;
+    const baseH = 70*s;
+    const e = {
+      kind,
+      x: canvas.width + 80*s,
+      y: groundY(),
+      z: 0,
+      w: kind==='erp' ? 90*s : 68*s,
+      h: kind==='erp' ? 120*s : baseH,
+      vx: - (world.speed * world.speedMul) * 1.0 * DPR,
+      hit:true
+    };
+    if(kind==='cart'){ e.h = 60*s; e.w = 120*s; e.y -= 10*s; }
+    if(kind==='erp'){ e.w = 80*s; e.h = 140*s; }
+    ents.push(e);
+  }
+  function spawnCrumb(){
+    const s = world.scale;
+    const e = {
+      kind:'crumb',
+      x: canvas.width + 40*s,
+      y: groundY() - rnd(80*s, 220*s),
+      z: 0,
+      r: 12*s,
+      vx: - (world.speed * world.speedMul) * 1.0 * DPR,
+      hit:false
+    };
+    ents.push(e);
+  }
+  function spawnPower(){
+    const s = world.scale;
+    const types = ['shield','boost','eridok'];
+    const kind = types[Math.floor(Math.random()*types.length)];
+    const e = {
+      kind,
+      x: canvas.width + 60*s,
+      y: groundY() - rnd(60*s, 200*s),
+      z: 0,
+      r: 16*s,
+      vx: - (world.speed * world.speedMul) * 1.0 * DPR,
+      hit:false
+    };
+    ents.push(e);
   }
 
-  // ------- Game State
-  const State = { START:0, RUN:1, OVER:2 };
-  let state = State.START;
+  // Spawners
+  let nextSpawn = 0;
+  let nextCrumbTry = 0;
+  let nextPowerTry = 2000;
 
-  // ------- Level/Zone
-  const ZONES = [
-    { name:'Склад',     colorTop:'#0e1222', colorBot:'#161c35', speed: 6.2,  spawn: 1.1,  chip: .6 },
-    { name:'Магазин',   colorTop:'#12162a', colorBot:'#1b2240', speed: 6.8,  spawn: 1.0,  chip: .55 },
-    { name:'Переговорка', colorTop:'#151a2f', colorBot:'#1f2748', speed: 7.3,  spawn: 0.92, chip: .52 }
-  ];
-  let zoneIndex = 0;
-  let zoneTime = 0;
-  let speed = ZONES[0].speed * (innerWidth<700?0.9:1); // немного мягче на мобиле
-  let spawnT=0, chipT=0;
+  function groundY(){ return H*0.78; }
 
-  function setZone(i){
-    zoneIndex = i;
-    elZone.textContent = ZONES[i].name;
-    speed = ZONES[i].speed * 1.04; // +4% темпа
-    document.body.style.background = `linear-gradient(180deg,${ZONES[i].colorTop},${ZONES[i].colorBot})`;
-    toast('Зона: ' + ZONES[i].name);
-  }
-
-  // ------- Player
-  const groundY = Math.floor(H*0.78);
-  let px = Math.floor(W*0.22), py = groundY, pv = 0;
-  const R  = Math.max(14*DPR, 10);  // радиус печеньки
-  let onGround = true;
-  let jumpsLeft = 2;
-  let coyoteUntil = 0;
-  let bufferUntil = 0;
-  const GRAV = 1800;       // px/s^2
-  const JUMP1= 710;        // px/s
-  const JUMP2= 640;        // px/s
-  const COYOTE_MS = 110;
-  const BUFFER_MS = 130;
-
-  // lanes (only vertical jumps; linear runner)
-  // ------- Entities
-  const obstacles = []; // {x,y,w,h}
-  const chips = [];     // {x,y,r}
-
-  // ------- Input
-  function doJump(){
-    const now = performance.now();
-    bufferUntil = now + BUFFER_MS;
-    if(onGround || now <= coyoteUntil){
-      pv = -JUMP1;
-      onGround = false;
-      jumpsLeft = 1;
-    } else if (jumpsLeft>0){
-      pv = -JUMP2;
-      jumpsLeft = 0;
-    }
-  }
-
-  function onPointerDown(e){
-    if(state===State.START){ startGame(); return; }
-    if(state!==State.RUN) return;
-    doJump();
-  }
-  function onKeyDown(e){
-    if(state===State.START && (e.code==='Space'||e.code==='ArrowUp'||e.code==='Enter')){ startGame(); return; }
-    if(state!==State.RUN) return;
-    if(e.code==='Space'||e.code==='ArrowUp'){ doJump(); }
-  }
-  addEventListener('pointerdown', onPointerDown, {passive:true});
-  addEventListener('keydown', onKeyDown);
-
-  // ------- Helpers
   function reset(){
-    px = Math.floor(W*0.22);
-    py = groundY;
-    pv = 0;
-    onGround = true;
-    jumpsLeft = 2;
-    coyoteUntil = 0;
-    bufferUntil = 0;
-    zoneIndex = 0;
-    zoneTime = 0;
-    spawnT = 0; chipT = 0;
-    setZone(0);
-    obstacles.length = 0;
-    chips.length = 0;
-    score = 0;
-    elScore.textContent = score;
-    // warmup
-    for(let i=0;i<6;i++){
-      spawnObstacle();
-      spawnChip();
+    world.level = 1;
+    world.speedMul = 1.0;
+    world.crumbs = 0;
+    world.stageCrumbs = 0;
+    world.bannerTime = 0;
+    world.shieldTime = 0;
+    world.boostTime = 0;
+    world.confettiTime = 0;
+    world.msgCooldown = 0;
+    player.x = W*0.22;
+    player.y = groundY();
+    player.vy = 0;
+    player.onGround = true;
+    player.jumps = 0;
+    player.invul = 0;
+    ents.length = 0;
+    nextSpawn = 600;
+    nextCrumbTry = 0;
+    nextPowerTry = 2200;
+    updateHUD();
+  }
+
+  // ===== Input =====
+  let pressed = false;
+  let wantJump = false;
+  function press(){
+    pressed = true; wantJump = true; player.lastJumpPress = now();
+  }
+  function release(){ pressed = false; }
+  window.addEventListener('keydown', (e)=>{
+    if(e.code==='Space' || e.code==='ArrowUp'){ e.preventDefault(); press(); }
+    if(e.code==='KeyP'){ togglePause(); }
+  }, {passive:false});
+  window.addEventListener('keyup',(e)=>{
+    if(e.code==='Space' || e.code==='ArrowUp'){ release(); }
+  },{passive:true});
+  // Pointer
+  canvas.addEventListener('pointerdown', (e)=>{ press(); }, {passive:true});
+  canvas.addEventListener('pointerup', (e)=>{ release(); }, {passive:true});
+  // Global tap-to-start fallback (Safari/Telegram quirks)
+  document.addEventListener('click', (e)=>{
+    if(state === GS.MENU){ startGame(); }
+  }, {once:true, passive:true});
+
+  // ===== Jump mechanics: coyote time & jump buffer =====
+  function tryJump(){
+    const t = now();
+    const canCoyote = (t - player.lastGroundTime) <= DIFF.coyote;
+    const buffered = (t - player.lastJumpPress) <= DIFF.jumpBuffer;
+    if(!buffered) return;
+
+    if(player.onGround || canCoyote){
+      // first jump
+      player.vy = -DIFF.jumpV * world.scale * DPR;
+      player.onGround = false;
+      player.jumps = 1;
+      wantJump = false;
+      return;
+    }
+    if(!player.onGround && player.jumps === 1){
+      // second jump only in air
+      player.vy = -DIFF.jump2V * world.scale * DPR;
+      player.jumps = 2;
+      wantJump = false;
+      popToast('Двойной прыжок!');
+      return;
     }
   }
 
-  function spawnObstacle(){
-    const h = 28*DPR + Math.random()*38*DPR;
-    const w = 22*DPR + Math.random()*24*DPR;
-    obstacles.push({x: W + Math.random()*W*0.4, y: groundY - h, w, h});
+  // ===== UI =====
+  function popToast(s, color){
+    if(world.msgCooldown>0) return;
+    toast.textContent = s;
+    toast.style.borderColor = color || 'rgba(255,255,255,.16)';
+    toast.classList.add('show');
+    world.msgCooldown = 1200;
+    setTimeout(()=>toast.classList.remove('show'), 950);
   }
-  function spawnChip(){
-    const r = 9*DPR + Math.random()*6*DPR;
-    const y = groundY - (40*DPR + Math.random()*120*DPR);
-    chips.push({x: W + Math.random()*W*0.5, y, r});
-  }
-
-  // ------- Start/Over
-  function startGame(){
-    state = State.RUN;
-    startOv.style.display = 'none';
-    overOv.style.display = 'none';
-    reset();
-    toast('3… 2… 1… Поехали!');
-  }
-  function gameOver(){
-    state = State.OVER;
-    overOv.style.display = '';
+  function updateHUD(){
+    hudScore.textContent = `Крошки: ${world.crumbs}`;
+    hudLvl.textContent = `Уровень: ${['—','РЦ','Магазин','Переговорка'][world.level]}`;
+    if(world.shieldTime>0){
+      hudShield.style.display='inline-flex';
+      hudShield.textContent = `Щит: ${Math.ceil(world.shieldTime/1000)}с`;
+    } else {
+      hudShield.style.display='none';
+    }
   }
 
-  btnStart.addEventListener('click', startGame, {passive:true});
-  btnRetry.addEventListener('click', startGame, {passive:true});
-
-  // ------- Score
-  let score = 0;
-
-  // ------- Drawing
+  // ===== Rendering helpers (2.5D look) =====
   function drawGround(){
-    // base line
-    ctx.strokeStyle = '#2a335e';
-    ctx.lineWidth = 3*DPR;
+    const s = world.scale;
+    // perspective floor stripes
+    const gy = groundY();
+    const stripes = 14;
+    for(let i=0;i<stripes;i++){
+      const y = gy + i*10*s*DPR;
+      const alpha = 0.035 * (1 - i/stripes);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillRect(0, y, W, 6*DPR);
+    }
+    // horizon glow
+    const grad = ctx.createLinearGradient(0, 0, 0, gy);
+    grad.addColorStop(0, 'rgba(125,96,197,.12)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, gy);
+  }
+
+  function eye(x,y,r,open=1){
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    // pupil
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(x-1.5*DPR,y, r*0.55, r*0.8*open, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(x-1*DPR,y, r*0.35*open, 0, Math.PI*2); ctx.fill();
+  }
+
+  function drawOreo(p){
+    const s = world.scale;
+    const r = (p.w*0.62);
+    // body
+    const grad = ctx.createRadialGradient(p.x, p.y, r*0.2, p.x, p.y, r);
+    grad.addColorStop(0, '#1b1b25');
+    grad.addColorStop(1, '#0a0a12');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2); ctx.fill();
+    // cream ring
+    ctx.strokeStyle = '#fafafa';
+    ctx.lineWidth = 6*DPR;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r*0.78, 0, Math.PI*2); ctx.stroke();
+    // eyes
+    p.blink -= dt;
+    const open = (p.blink>0 && p.blink<90) ? 0.15 : 1;
+    eye(p.x - r*0.28, p.y - r*0.08, 10*DPR, open);
+    eye(p.x + r*0.28, p.y - r*0.08, 10*DPR, open);
+    if(p.blink<=0) p.blink = rnd(800, 2200);
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
     ctx.beginPath();
-    ctx.moveTo(0, groundY+1*DPR);
-    ctx.lineTo(W, groundY+1*DPR);
-    ctx.stroke();
-    // stripes
-    ctx.strokeStyle = '#3b467a';
-    ctx.lineWidth = 1*DPR;
-    for(let x=0; x<W; x+=24*DPR){
-      ctx.beginPath();
-      ctx.moveTo(x, groundY+6*DPR);
-      ctx.lineTo(x+12*DPR, groundY+6*DPR);
-      ctx.stroke();
+    ctx.ellipse(p.x, groundY()+6*DPR, r*0.95, r*0.30, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawObstacle(e){
+    const s = world.scale;
+    if(e.kind==='erp'){
+      // tall red wall
+      ctx.fillStyle = '#d72638';
+      ctx.fillRect(e.x-e.w/2, e.y-e.h, e.w, e.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${14*DPR}px ui-monospace`;
+      ctx.fillText('ERP упал', e.x-e.w/2+6*DPR, e.y-e.h+20*DPR);
+    } else if(e.kind==='cart'){
+      ctx.fillStyle = '#2b9df4';
+      ctx.fillRect(e.x-e.w/2, e.y-e.h, e.w, e.h);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(e.x-e.w/2+6*DPR, e.y-10*DPR, e.w-12*DPR, 4*DPR);
+    } else {
+      ctx.fillStyle = '#a87d5a';
+      ctx.fillRect(e.x-e.w/2, e.y-e.h, e.w, e.h);
+      ctx.strokeStyle = '#6d4c35'; ctx.lineWidth = 3*DPR;
+      ctx.strokeRect(e.x-e.w/2, e.y-e.h, e.w, e.h);
     }
   }
 
-  function drawPlayer(){
-    // body (cookie)
-    ctx.save();
-    ctx.translate(px, py);
-    // shadow
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
-    const shR = Math.max(R*0.9, 8*DPR);
-    ctx.beginPath();
-    ctx.ellipse(px, groundY+6*DPR, shR, shR*0.4, 0, 0, Math.PI*2);
-    ctx.fill();
+  function drawCrumb(e){
+    ctx.fillStyle = '#c98b3c';
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#5f3a14';
+    ctx.beginPath(); ctx.arc(e.x - e.r*0.3, e.y - e.r*0.2, e.r*0.25, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(e.x + e.r*0.2, e.y + e.r*0.15, e.r*0.18, 0, Math.PI*2); ctx.fill();
+  }
 
-    // cookie
-    const grd = ctx.createLinearGradient(0, -R, 0, R);
-    grd.addColorStop(0, '#0b57cf');
-    grd.addColorStop(1, '#0a49b0');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(0, 0, R, 0, Math.PI*2);
-    ctx.fill();
-    // cream ring
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 5*DPR;
-    ctx.beginPath();
-    ctx.arc(0, 0, R*0.68, 0, Math.PI*2);
-    ctx.stroke();
-
-    // eyes
-    const blink = (Math.floor(performance.now()/350)%12===0);
-    function eye(ex){
-      ctx.save();
-      ctx.translate(ex, -R*0.2);
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(0,0, R*0.16, 0, Math.PI*2); ctx.fill();
-      if(!blink){
-        ctx.fillStyle = '#0e0e0e';
-        ctx.beginPath(); ctx.arc(0, R*0.02, R*0.08, 0, Math.PI*2); ctx.fill();
-      }
-      ctx.restore();
+  function drawPower(e){
+    if(e.kind==='shield'){
+      ctx.strokeStyle = '#22ffb9'; ctx.lineWidth = 3*DPR;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.stroke();
+    } else if(e.kind==='boost'){
+      ctx.strokeStyle = '#ffd84d'; ctx.lineWidth = 3*DPR;
+      ctx.beginPath(); ctx.moveTo(e.x-e.r, e.y); ctx.lineTo(e.x+e.r, e.y); ctx.stroke();
+    } else {
+      // erid ok
+      ctx.strokeStyle = '#9cf'; ctx.lineWidth = 3*DPR;
+      ctx.strokeRect(e.x-e.r, e.y-e.r, e.r*2, e.r*2);
     }
-    eye(-R*0.33);
-    eye(+R*0.33);
+  }
 
+  function backgroundLayers(){
+    const s = world.scale;
+    const gy = groundY();
+    // sky gradient per level
+    const g = ctx.createLinearGradient(0,0,0,H);
+    if(world.level===1){ g.addColorStop(0,'#0b0e23'); g.addColorStop(1,'#182048'); }
+    if(world.level===2){ g.addColorStop(0,'#10152a'); g.addColorStop(1,'#1d254d'); }
+    if(world.level===3){ g.addColorStop(0,'#151028'); g.addColorStop(1,'#2b1b38'); }
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    // parallax boxes
+    const t = performance.now()*0.00006;
+    const speeds = [0.15,0.35,0.7];
+    const colors = world.level===1 ? ['#233','#2d3a5f','#446'] :
+                   world.level===2 ? ['#223','#37406a','#4a5aa0'] :
+                                     ['#232','#523656','#744a88'];
+    for(let layer=0; layer<3; layer++){
+      const sp = speeds[layer] * world.speed * world.speedMul * 18;
+      for(let i=0;i<8;i++){
+        const w = 120*s + (i%3)*30*s;
+        const h = 80*s + (i%4)*24*s;
+        const x = (W - ((t*sp + i*280*s) % (W+300*s))) - 100*s;
+        const y = gy - 40*s - layer*70*s - (i%3)*22*s;
+        ctx.fillStyle = colors[layer];
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = 'rgba(255,255,255,.06)';
+        ctx.fillRect(x+6*s, y+8*s, w-12*s, 6*s);
+      }
+    }
+  }
+
+  // ===== Game loop =====
+  function step(){
+    const tn = now();
+    dt = tn - lt; lt = tn;
+    if(dt>60) dt=60; // clamp
+
+    if(state===GS.PLAY){
+      update(dt);
+      draw();
+    }else if(state===GS.COUNT){
+      draw(); // keep anim
+    }else{
+      // still render subtle bg
+      draw();
+    }
+    requestAnimationFrame(step);
+  }
+
+  function update(ms){
+    const s = world.scale;
+    const gy = groundY();
+
+    // cooldowns
+    if(world.msgCooldown>0) world.msgCooldown -= ms;
+    if(world.bannerTime>0) world.bannerTime -= ms;
+    if(world.shieldTime>0){ world.shieldTime -= ms; if(world.shieldTime<=0) player.invul=0; }
+    if(world.boostTime>0){ world.boostTime -= ms; if(world.boostTime<=0) world.speedMul = 1.0; }
+    if(world.confettiTime>0){ world.confettiTime -= ms; }
+
+    // input
+    if(wantJump){ tryJump(); }
+
+    // physics
+    player.vy += world.gravity * DPR * s * (ms/16.6);
+    player.vy = clamp(player.vy, -999, DIFF.maxFall * DPR * s);
+    player.y += player.vy * (ms/16.6);
+
+    if(player.y >= gy){
+      player.y = gy;
+      player.onGround = true;
+      player.jumps = 0;
+      player.lastGroundTime = now();
+    }else{
+      player.onGround = false;
+    }
+
+    // spawn logic
+    nextSpawn -= ms;
+    if(nextSpawn<=0){
+      const kinds = ['box','erp','cart'];
+      const k = kinds[Math.floor(Math.random()*kinds.length)];
+      spawnObstacle(k);
+      const min = DIFF.spawnMin, max = DIFF.spawnMax;
+      nextSpawn = rnd(min, max) / world.speedMul;
+    }
+
+    nextCrumbTry -= ms;
+    if(nextCrumbTry<=0){
+      spawnCrumb();
+      nextCrumbTry = DIFF.crumbEvery / world.speedMul;
+    }
+
+    nextPowerTry -= ms;
+    if(nextPowerTry<=0){
+      if(Math.random()<0.35) spawnPower();
+      nextPowerTry = rnd(2500, 4800);
+    }
+
+    // move ents, collisions
+    const v = -(world.speed * world.speedMul) * DPR;
+    for(let i=ents.length-1;i>=0;i--){
+      const e = ents[i];
+      e.x += e.vx ?? v;
+      // remove offscreen
+      if(e.x < -200*DPR){ ents.splice(i,1); continue; }
+
+      // collisions (AABB / circle)
+      if(e.kind==='crumb' || e.kind==='shield' || e.kind==='boost' || e.kind==='eridok'){
+        const dx = e.x - player.x, dy = e.y - player.y;
+        const rr = (e.r || 12*DPR) + (player.w*0.45);
+        if(dx*dx + dy*dy <= rr*rr){
+          if(e.kind==='crumb'){
+            world.crumbs++; world.stageCrumbs++; popToast('+1 крошка', '#2cf');
+            ents.splice(i,1);
+            updateHUD();
+            if(world.stageCrumbs>=world.targetPerStage){
+              advanceLevel();
+            }
+          } else if(e.kind==='shield'){
+            player.invul = 1; world.shieldTime = 5500; updateHUD(); popToast('Препак: щит 5с', '#22ffb9'); ents.splice(i,1);
+          } else if(e.kind==='boost'){
+            world.speedMul = 1.2; world.boostTime = 3200; popToast('Допскидка: буст', '#ffd84d'); ents.splice(i,1);
+          } else if(e.kind==='eridok'){
+            world.confettiTime = 1200; popToast('Без ERID: ура!', '#9cf'); ents.splice(i,1);
+          }
+        }
+      } else {
+        // obstacle AABB vs player
+        const pw = player.w*0.9, ph = player.h*0.9;
+        const px = player.x - pw*0.5, py = player.y - ph*0.5;
+        const ex = e.x - e.w*0.5, ey = e.y - e.h;
+        if(px < ex + e.w && px + pw > ex && py < ey + e.h && py + ph > ey){
+          if(player.invul){ // consume shield
+            player.invul = 0; world.shieldTime = 0; popToast('Щит спас!', '#22ffb9');
+            ents.splice(i,1);
+          } else {
+            gameOver();
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  function draw(){
+    // bg & parallax
+    backgroundLayers();
+    drawGround();
+
+    // entities
+    ents.forEach(e=>{
+      if(e.kind==='crumb') drawCrumb(e);
+      else if(e.kind==='shield'||e.kind==='boost'||e.kind==='eridok') drawPower(e);
+      else drawObstacle(e);
+    });
+
+    // player
+    drawOreo(player);
+
+    // level banner
+    if(world.bannerTime>0){
+      const a = Math.min(1, world.bannerTime/800);
+      drawBanner(a);
+    }
+
+    // confetti
+    if(world.confettiTime>0){
+      const n = 36;
+      for(let i=0;i<n;i++){
+        const ang = (i/n)*Math.PI*2;
+        const r = (1 - world.confettiTime/1200) * 260 * world.scale * DPR;
+        const x = player.x + Math.cos(ang)*r;
+        const y = player.y - 60*world.scale*DPR + Math.sin(ang)*r*0.6;
+        ctx.fillStyle = ['#f66','#6f6','#66f','#ff6','#6ff','#f6f'][i%6];
+        ctx.fillRect(x, y, 8*DPR, 8*DPR);
+      }
+    }
+
+    // MENU overlay subtle
+    if(state===GS.MENU){
+      // Start screen handled by DOM
+    }
+  }
+
+  function drawBanner(alpha){
+    const txt = ['','Уровень 1: Склад РЦ','Уровень 2: Магазин','Уровень 3: Переговорка'][world.level];
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const w = W*0.78, h = 80*DPR;
+    ctx.fillStyle = 'rgba(0,0,0,.45)';
+    ctx.fillRect((W-w)/2, 42*DPR, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2*DPR;
+    ctx.strokeRect((W-w)/2, 42*DPR, w, h);
+    ctx.fillStyle = '#fff';
+    ctx.font = `${28*DPR}px ui-monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(txt, W/2, 42*DPR+52*DPR);
     ctx.restore();
   }
 
-  function drawOb(o){
-    ctx.fillStyle = '#d04b5a';
-    ctx.fillRect(o.x, o.y, o.w, o.h);
-    // top shine
-    ctx.fillStyle = 'rgba(255,255,255,.12)';
-    ctx.fillRect(o.x, o.y, o.w, 3*DPR);
-  }
-
-  function drawChip(c){
-    const grd = ctx.createRadialGradient(c.x-2*DPR, c.y-2*DPR, 2*DPR, c.x, c.y, c.r);
-    grd.addColorStop(0, '#ffe099');
-    grd.addColorStop(1, '#e7b65a');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, c.r, 0, Math.PI*2);
-    ctx.fill();
-    // sparkle
-    ctx.fillStyle = 'rgba(255,255,255,.4)';
-    ctx.beginPath();
-    ctx.arc(c.x - c.r*0.4, c.y - c.r*0.4, c.r*0.2, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  // ------- Loop
-  let last = performance.now();
-  function loop(now){
-    requestAnimationFrame(loop);
-    const dt = Math.min(0.033, (now-last)/1000);
-    last = now;
-
-    // clear
-    ctx.clearRect(0,0,W,H);
-
-    if(state===State.RUN){
-      zoneTime += dt;
-      spawnT += dt;
-      chipT  += dt;
-      if(zoneTime > 18){ // ~18с на зону
-        if(zoneIndex < ZONES.length-1){
-          setZone(zoneIndex+1);
-          zoneTime = 0;
-        } else {
-          // остаёмся на последней зоне — бесконечный ран
-        }
-      }
-
-      // spawn
-      if(spawnT >= ZONES[zoneIndex].spawn){
-        spawnT = 0;
-        spawnObstacle();
-        if(Math.random()<0.45) toast(['OOS предотвращён','ERID не нужен','Допскидка +3%','Препак в продакшн'][Math.floor(Math.random()*4)]);
-      }
-      if(chipT >= ZONES[zoneIndex].chip){
-        chipT = 0;
-        spawnChip();
-      }
-
-      // move world
-      const vx = speed * 60 * DPR * dt; // px per frame based on dt
-      for(let i=obstacles.length-1;i>=0;i--){
-        const o=obstacles[i];
-        o.x -= vx;
-        if(o.x+o.w < -20*DPR) obstacles.splice(i,1);
-      }
-      for(let i=chips.length-1;i>=0;i--){
-        const c=chips[i];
-        c.x -= vx;
-        if(c.x+c.r < -20*DPR) chips.splice(i,1);
-      }
-
-      // physics
-      pv += GRAV*dt;
-      py += pv*dt;
-      if(py >= groundY){
-        py = groundY;
-        if(!onGround){
-          onGround = true; jumpsLeft = 2;
-          // buffered jump?
-          if(performance.now() <= bufferUntil){
-            bufferUntil = 0;
-            doJump();
-          }
-        }
-      }else{
-        coyoteUntil = performance.now() + COYOTE_MS;
-        onGround = false;
-      }
-
-      // collisions
-      // player AABB
-      const pr = R*0.85; // forgiving hitbox
-      const pbox = {x:px-pr, y:py-pr, w:pr*2, h:pr*2};
-      // chips
-      for(let i=chips.length-1;i>=0;i--){
-        const c=chips[i];
-        const dx = (c.x - px), dy = (c.y - py);
-        if(dx*dx + dy*dy <= (c.r+pr*0.6)*(c.r+pr*0.6)){
-          chips.splice(i,1);
-          score += 1;
-          elScore.textContent = score;
-        }
-      }
-      // obstacles
-      for(let i=0;i<obstacles.length;i++){
-        const o=obstacles[i];
-        if(pbox.x < o.x+o.w && pbox.x+pbox.w > o.x && pbox.y < o.y+o.h && pbox.y+pbox.h > o.y){
-          // crash
-          if(score>best){ best=score; localStorage.setItem('runner2d.best', best); elBest.textContent = best; }
-          gameOver();
-          break;
-        }
-      }
+  function advanceLevel(){
+    if(world.level < world.maxLevel){
+      world.level++;
+      world.stageCrumbs = 0;
+      world.bannerTime = 1600;
+      popToast('Смена сцены!', '#7d60c5');
+      updateHUD();
+    } else {
+      win();
     }
-
-    // draw
-    drawGround();
-    chips.forEach(drawChip);
-    obstacles.forEach(drawOb);
-    drawPlayer();
   }
-  requestAnimationFrame(loop);
 
-  // Pause on blur (prevents "косой" тайминг)
-  addEventListener('visibilitychange', ()=>{
-    last = performance.now();
-  });
+  function gameOver(){
+    state = GS.OVER;
+    popToast('Логистика отменила отгрузку 😅', '#ff7373');
+    // simple restart after short delay
+    setTimeout(()=>{
+      reset(); startCountdown();
+    }, 1400);
+  }
 
-  // initial zone text
-  setZone(0);
-  toast('Собирай крошки — очки идут только за них');
-  toast('Двойной прыжок: второй — только в воздухе');
+  function win(){
+    state = GS.WIN;
+    popToast('Год закрыт на 120% KPI 🎆', '#7dff73');
+    setTimeout(()=>{
+      reset(); startCountdown();
+    }, 1800);
+  }
+
+  function startCountdown(){
+    state = GS.COUNT;
+    let c = 3;
+    const id = setInterval(()=>{
+      popToast(String(c), '#9cf');
+      c--;
+      if(c===0){ clearInterval(id); state=GS.PLAY; }
+    }, 500);
+  }
+
+  function togglePause(){
+    if(state===GS.PLAY){ state=GS.PAUSE; popToast('Пауза'); }
+    else if(state===GS.PAUSE){ state=GS.PLAY; popToast('Продолжаем'); }
+  }
+
+  function startGame(){
+    startScreen.style.display='none';
+    reset();
+    startCountdown();
+  }
+  btnStart.addEventListener('click', startGame);
+
+  // Init
+  resize();
+  step();
 })();
 </script>
 </body>
