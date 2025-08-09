@@ -3,64 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mondelez Runner — ULTRA</title>
+<title>Mondelez Runner — 3D ULTRA</title>
 <meta name="theme-color" content="#0b0b12">
 <style>
-  :root { --bg:#0b0b12; --card:#ffffff; --accent:#7a4bd4; --accent2:#2b7bd4; --mint:#00ff95; }
+  :root { --bg:#0b0b12; --ui:#ffffff; --accent:#7a4bd4; --mint:#00ff95; --blue:#2b7bd4; }
   * { box-sizing: border-box; }
   html, body { margin:0; height:100%; background:var(--bg); overflow:hidden; }
-  canvas { display:block; width:100vw; height:100vh; touch-action: manipulation; }
-  #ui { position:fixed; inset:0; pointer-events:none; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial; }
-  .hud { position:absolute; left:10px; top:8px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.6); font-weight:800; }
+  #hud { position:fixed; inset:0; pointer-events:none; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial; }
+  .hud { position:absolute; left:10px; top:8px; color:#fff; text-shadow:0 3px 12px rgba(0,0,0,.6); font-weight:800; }
   .hud .line { font-size:12px; opacity:.95; letter-spacing:.2px; }
   .hud .big { font-size:16px; margin-bottom:2px; }
   .btns { position:absolute; right:10px; top:8px; display:flex; gap:8px; }
   .btn { pointer-events:auto; border:none; border-radius:10px; padding:9px 14px; background:#2b225a; color:#fff; font-weight:800; cursor:pointer; box-shadow:0 8px 26px rgba(0,0,0,.25); }
-  .btn.sec { background:var(--accent2); }
+  .btn.sec { background:var(--blue); }
   .toast { position:absolute; left:50%; transform:translateX(-50%); bottom:9vh; background:rgba(20,20,35,.9);
            color:#d9d9ff; padding:10px 14px; border:1px solid rgba(122,75,212,.6); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; white-space:nowrap; }
   .toast.show { opacity:1; transform:translate(-50%, -8px); }
   .banner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-  .card { pointer-events:auto; max-width:min(780px, 94vw); background:rgba(255,255,255,.97); border:3px solid var(--accent); border-radius:18px; padding:18px 20px; color:#2b225a; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.35); }
+  .card { pointer-events:auto; max-width:min(820px, 94vw); background:rgba(255,255,255,.97); border:3px solid var(--accent); border-radius:18px; padding:18px 20px; color:#2b225a; text-align:center; box-shadow:0 18px 60px rgba(0,0,0,.35); }
   .hidden { display:none; }
-  .credits { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; color:var(--mint); font-family: ui-monospace, Menlo, Consolas, "SF Mono", monospace; text-shadow:0 0 10px rgba(0,255,149,.35); white-space:pre; }
-  .devnames { font-family: ui-monospace, Menlo, Consolas, monospace; color:var(--mint); text-shadow:0 0 8px rgba(0,255,149,.35); font-size:clamp(13px,2.2vw,18px); margin:6px 0 12px; }
+  .dev { font-family: ui-monospace, Menlo, Consolas, monospace; color:var(--mint); text-shadow:0 0 8px rgba(0,255,149,.35); font-size:clamp(13px,2.2vw,18px); margin:6px 0 12px; }
   .start-title { font-size: clamp(22px, 4vw, 36px); margin: 6px 0 8px; }
   .mini { opacity:.8; font-size:clamp(12px,2vw,14px); }
   .start-actions { display:flex; justify-content:center; gap:10px; margin-top:12px; }
-  .avatar { width:min(160px, 32vw); margin:8px auto 6px; }
+  .btnlg { pointer-events:auto; border:none; border-radius:12px; padding:12px 20px; background:#2b225a; color:#fff; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.3); }
   .countdown { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); color:#fff; font-weight:900; font-size:12vh; text-shadow:0 10px 50px rgba(0,0,0,.35); pointer-events:none; }
-  .debug { position:absolute; left:50%; top:6px; transform:translateX(-50%); color:#8ef; background:rgba(0,0,0,.4); padding:4px 8px; border-radius:8px; font:11px/1.2 ui-monospace, Menlo, Consolas, monospace; display:none; }
-  .debug.show { display:block; }
+  .touchhint { position:absolute; left:50%; bottom:24px; transform:translateX(-50%); color:#9fd; background:rgba(0,0,0,.35); padding:6px 10px; border-radius:10px; font:12px/1.2 ui-monospace, Menlo, Consolas, monospace; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Mondelez Runner"></canvas>
-
-<!-- START BANNER -->
-<div class="banner" id="startBanner" aria-modal="true" role="dialog">
-  <div class="card">
-    <svg class="avatar" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-label="Hacker FMCG CEOs">
-      <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0f1a2a"/><stop offset="1" stop-color="#1b2a40"/></linearGradient></defs>
-      <rect x="0" y="0" width="200" height="120" rx="12" fill="url(#g1)"/>
-      <!-- left visor -->
-      <circle cx="70" cy="60" r="28" fill="#111827" stroke="#00ffbf" stroke-width="2"/>
-      <rect x="55" y="52" width="30" height="8" rx="3" fill="#00ffbf"/>
-      <!-- right visor -->
-      <circle cx="130" cy="60" r="28" fill="#111827" stroke="#7a4bd4" stroke-width="2"/>
-      <rect x="115" y="52" width="30" height="8" rx="3" fill="#7a4bd4"/>
-      <!-- oreo chip -->
-      <circle cx="100" cy="25" r="10" fill="#3b2f2f"/><circle cx="100" cy="25" r="6.5" fill="#fff"/>
-    </svg>
-    <div class="mini">FMCG Hackers</div>
-    <h1 class="start-title">Mondelez Runner</h1>
-    <div class="devnames">Λlєксαndr Rødіonσv  •  Λlєxєy Blіnσv</div>
-    <div class="mini">Собирай крошки, избегай OOS и «ERP упал». Двойной прыжок: второй тап — в воздухе.</div>
-    <div class="start-actions"><button class="btn" id="startBtn" aria-label="Start the game">START</button></div>
-  </div>
-</div>
-
-<div id="ui">
+<div id="hud">
   <div class="hud">
     <div class="line big" id="levelLabel">Уровень: —</div>
     <div class="line" id="scoreLabel">Очки (крошки): 0</div>
@@ -73,293 +45,334 @@
   </div>
   <div class="toast" id="toast">Текст</div>
   <div class="countdown hidden" id="count">3</div>
-  <div class="banner hidden" id="pauseBanner"><div class="card"><h1>Пауза</h1><p>Тапни или <b>P</b> — продолжить.</p></div></div>
-  <div class="banner hidden" id="gameOverBanner"><div class="card"><h1>Игра окончена</h1><p id="overMsg">Попробуй ещё раз — крошки сами себя не соберут 😏</p></div></div>
-  <div class="banner hidden" id="victoryBanner"><div class="card"><h1>Год закрыт на 120% KPI 🎉</h1><p>Сеть согласовала выкладку, логистика в строю, ERP не падает — можно жить!</p><div class="credits" id="credits"></div></div></div>
-  <div class="debug" id="debug"></div>
+  <div class="touchhint" id="hint">Тап — прыжок, второй тап — двойной прыжок</div>
+
+  <div class="banner" id="startBanner" aria-modal="true" role="dialog">
+    <div class="card">
+      <div style="font-size:42px;margin-bottom:6px;">🍪⚡🛒</div>
+      <h1 class="start-title">Mondelez Runner — 3D ULTRA</h1>
+      <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
+      <div class="mini">Собирай крошки, уворачивайся от OOS/ERP, лови «препак» (щит) и «допскидку» (ускорение). Двойной прыжок: второй тап — в воздухе. Есть «coyote time» и «jump buffer» — прыжок ощущается как в больших играх.</div>
+      <div class="start-actions"><button class="btnlg" id="startBtn">START</button></div>
+    </div>
+  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
 <script>
 (function(){
   'use strict';
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-  const ui = {
-    start: document.getElementById('startBanner'),
-    startBtn: document.getElementById('startBtn'),
-    pause: document.getElementById('pauseBanner'),
-    over: document.getElementById('gameOverBanner'),
-    victory: document.getElementById('victoryBanner'),
+  // THREE setup
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  document.body.prepend(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0b12);
+
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2.1, 6);
+
+  // Lights
+  const hemi = new THREE.HemisphereLight(0x88bbff, 0x403020, 0.8);
+  const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+  dir.position.set(4,6,3);
+  dir.castShadow = true;
+  dir.shadow.mapSize.set(1024,1024);
+  scene.add(hemi, dir);
+
+  // Ground (endless stripes)
+  const groundGeo = new THREE.PlaneGeometry(40, 200, 1, 1);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x2a2740, metalness:0.1, roughness:0.8 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.position.z = -60;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Sky gradient
+  const skyGeo = new THREE.SphereGeometry(60, 32, 16);
+  const skyMat = new THREE.MeshBasicMaterial({ color: 0x111527, side: THREE.BackSide });
+  const sky = new THREE.Mesh(skyGeo, skyMat);
+  scene.add(sky);
+
+  // Oreo player (double biscuit with cream)
+  function createOreo(){
+    const g1 = new THREE.CylinderGeometry(0.45,0.45,0.18, 48);
+    const g2 = new THREE.CylinderGeometry(0.43,0.43,0.08, 48);
+    const matBrown = new THREE.MeshStandardMaterial({ color: 0x3b2f2f, metalness:0.3, roughness:0.6 });
+    const matCream = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness:0.05, roughness:0.4 });
+    const top = new THREE.Mesh(g1, matBrown);
+    const bot = new THREE.Mesh(g1, matBrown);
+    const cream = new THREE.Mesh(g2, matCream);
+    top.castShadow=bot.castShadow=cream.castShadow=true;
+    top.position.y = 0.13; bot.position.y = -0.13; cream.position.y = 0;
+    const group = new THREE.Group();
+    group.add(top, bot, cream);
+
+    // Eyes
+    const eyeGeo = new THREE.SphereGeometry(0.035, 16, 12);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness:0.2, roughness:0.3 });
+    const e1 = new THREE.Mesh(eyeGeo, eyeMat);
+    const e2 = new THREE.Mesh(eyeGeo, eyeMat);
+    e1.position.set(-0.12, 0.06, 0.44);
+    e2.position.set( 0.12, 0.06, 0.44);
+    group.add(e1,e2);
+
+    group.traverse(o=>o.castShadow=true);
+    return group;
+  }
+
+  const player = createOreo();
+  player.position.set(0, 0.6, 0);
+  scene.add(player);
+
+  // Obstacles & goodies
+  const obstacles = [];
+  const goodies = []; // {type, mesh}
+  const crumbs = [];  // pickups small
+
+  function spawnObstacle(){
+    const type = Math.random()<0.5? 'cube' : (Math.random()<0.5?'fall':'wall');
+    let mesh;
+    if(type==='cube'){
+      const s = 0.5 + Math.random()*0.3;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xff4b6e }));
+      mesh.userData.label = 'OOS';
+      mesh.position.set((Math.random()*2-1)*1.1, 0.25, -30);
+    }else if(type==='fall'){
+      const s = 0.45 + Math.random()*0.3;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), new THREE.MeshStandardMaterial({ color: 0xe8a36b }));
+      mesh.userData.fall = true;
+      mesh.userData.vy = 0.02 + Math.random()*0.02;
+      mesh.position.set((Math.random()*2-1)*1.1, 3 + Math.random()*1.5, -30);
+      mesh.userData.label = 'Нет стока';
+    }else{
+      const w = 0.7 + Math.random()*0.4;
+      const h = 0.35 + Math.random()*0.2;
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.5), new THREE.MeshStandardMaterial({ color: 0xffb84b }));
+      mesh.position.set((Math.random()*2-1)*1.1, h/2, -30);
+      mesh.userData.label = 'ERP упал';
+    }
+    mesh.castShadow = true;
+    obstacles.push(mesh);
+    scene.add(mesh);
+  }
+
+  function spawnGoodie(){
+    const r = Math.random();
+    const type = r<0.5 ? 'discount' : (r<0.8 ? 'prepack':'erid');
+    let color = type==='discount' ? 0x2b7bd4 : (type==='prepack' ? 0x00d6ff : 0x7a4bd4);
+    const mesh = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.06, 16, 24), new THREE.MeshStandardMaterial({ color }));
+    mesh.position.set((Math.random()*2-1)*1.1, 0.9 + Math.random()*0.8, -28);
+    mesh.castShadow=true;
+    mesh.userData.type = type;
+    goodies.push(mesh); scene.add(mesh);
+  }
+
+  function spawnCrumbs(){
+    const n = 5 + Math.floor(Math.random()*4);
+    for(let i=0;i<n;i++){
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshStandardMaterial({ color: 0x6d3b2a }));
+      s.position.set((Math.random()*2-1)*1.1, 0.7 + Math.sin(i/n*Math.PI)*0.5, -26 - i*0.8);
+      s.castShadow=true; crumbs.push(s); scene.add(s);
+    }
+  }
+
+  // Gameplay state
+  const SPEED_UP = 1.04;
+  const levels=[
+    { name:'Склад РЦ', seconds:24, speed:0.22*SPEED_UP },
+    { name:'Магазин', seconds:28, speed:0.25*SPEED_UP },
+    { name:'Переговорка', seconds:32, speed:0.28*SPEED_UP }
+  ];
+  let levelIdx=0, timeLeft=levels[0].seconds, speed=levels[0].speed, t=0;
+  let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
+  const hud = {
     level: document.getElementById('levelLabel'),
     score: document.getElementById('scoreLabel'),
     best: document.getElementById('bestLabel'),
     status: document.getElementById('statusLabel'),
     toast: document.getElementById('toast'),
-    restartBtn: document.getElementById('restartBtn'),
-    pauseBtn: document.getElementById('pauseBtn'),
-    credits: document.getElementById('credits'),
     count: document.getElementById('count'),
-    debug: document.getElementById('debug')
+    start: document.getElementById('startBanner'),
+    startBtn: document.getElementById('startBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    restartBtn: document.getElementById('restartBtn'),
+    hint: document.getElementById('hint')
   };
 
-  // HiDPI scaling for iOS Safari/Chrome + desktop
-  let DPR = 1, W = 0, H = 0;
-  function fitCanvas(){
-    const cssW = Math.max(320, window.innerWidth || document.documentElement.clientWidth);
-    const cssH = Math.max(320, window.innerHeight || document.documentElement.clientHeight);
-    DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    canvas.width = Math.floor(cssW * DPR);
-    canvas.height = Math.floor(cssH * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); // important
-    W = cssW; H = cssH;
+  // Physics & jump feel
+  let vy = 0;
+  const G = 0.015;
+  let groundY = 0.6;
+  let jumps=0, onGround=true;
+  // coyote time: small grace after leaving ground; jump buffer: small window before landing
+  let coyoteTimer=0, jumpBufferTimer=0;
+  const COYOTE=0.14, BUFFER=0.14;
+
+  function requestJump(){
+    jumpBufferTimer = BUFFER; // remember intent
+    tryPerformJump();
   }
-  window.addEventListener('resize', fitCanvas);
-  window.addEventListener('orientationchange', ()=>setTimeout(fitCanvas, 120));
-  fitCanvas();
-
-  // Theme
-  const PURPLE='#7a4bd4', BLUE='#2b7bd4';
-  const SKY=['#0f1220','#0f1424','#111527'];
-  const THEME=['#d8c6ff','#cfe6ff','#ffe9c6'];
-
-  // State
-  let state='start';
-  let levelIndex=0;
-  const SPEED_UP = 1.04; // +4%
-  const levels=[
-    { name:'Склад РЦ', seconds:26, speedBase:4.8*SPEED_UP, spawn:{cube:0.52, fall:0.30, wall:0.18}, bonus:{discount:0.50, prepack:0.30, erid:0.20} },
-    { name:'Магазин', seconds:30, speedBase:5.2*SPEED_UP, spawn:{cube:0.50, fall:0.32, wall:0.18}, bonus:{discount:0.48, prepack:0.34, erid:0.18} },
-    { name:'Переговорка', seconds:34, speedBase:5.6*SPEED_UP, spawn:{cube:0.48, fall:0.34, wall:0.18}, bonus:{discount:0.46, prepack:0.34, erid:0.20} }
-  ];
-  let timeLeft=levels[0].seconds, t=0, last=0, speed=levels[0].speedBase;
-  let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
-
-  // Entities
-  const player={x:0,y:0,r:24,vy:0,onGround:true,shield:0,boost:0,jumps:0,maxJumps:2};
-  const obstacles=[], goodies=[], crumbs=[], particles=[], confetti=[];
-
-  // Debug helper
-  let debugOn = (new URLSearchParams(location.search).get('debug')==='1');
-  function dbg(msg){ if(!debugOn) return; ui.debug.textContent = msg; ui.debug.classList.add('show'); }
-
-  function resetAll(){ levelIndex=0; setupLevel(0); score=0; t=0; state='countdown'; startCountdown(); }
-  function setupLevel(i){
-    const L=levels[i];
-    timeLeft=L.seconds;
-    obstacles.length=0; goodies.length=0; crumbs.length=0; particles.length=0; confetti.length=0;
-    speed=L.speedBase;
-    player.x=Math.max(120, W*0.2);
-    player.y=H - 0.22*H;
-    player.r=Math.max(18, Math.min(30, Math.floor(H*0.035)));
-    player.vy=0; player.onGround=true; player.jumps=0; player.shield=0; player.boost=0;
-    toast('Уровень: '+L.name+' • Двойной прыжок');
-    ui.level.textContent='Уровень: '+L.name;
-  }
-
-  // Toasts
-  const memos=['Фотоотчёт срочно','ERP «упал», держимся','Нет стока на РЦ — ладно','Без ERID ✨','Препак зашёл!','OOS закрыт 😎','GM: KPI? — Будет','Дизайн без правок!','Допскидка -3% 🚀','SKU расширены'];
-  let toastTimer=0, memoT=0;
-  function toast(msg){ ui.toast.textContent=msg; ui.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),2200); }
-
-  // Helpers
-  function rect(x,y,w,h,f){ ctx.fillStyle=f; ctx.fillRect(x,y,w,h); }
-  function circle(x,y,r,f){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=f; ctx.fill(); }
-  function rand(a,b){ return a + Math.random()*(b-a); }
-  function randI(a,b){ return Math.floor(rand(a,b)); }
-
-  // Background
-  function drawBG(){
-    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, SKY[levelIndex]); g.addColorStop(1,'#17182a');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    ctx.globalAlpha=.24;
-    for (let i=0;i<3;i++){
-      const base=H*.65 + i*10;
-      ctx.beginPath(); ctx.moveTo(0,base);
-      for (let x=0;x<=W;x+=12){ const y=base - 24*Math.sin((x*.003)+(i*1.7)+t*.7); ctx.lineTo(x,y); }
-      ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
-      ctx.fillStyle=THEME[i]; ctx.fill();
+  function tryPerformJump(){
+    // allowed if onGround or inside coyote, or second jump
+    if((onGround || coyoteTimer>0) && jumps===0){
+      vy = 0.36; jumps=1; onGround=false; coyoteTimer=0; jumpBufferTimer=0; return;
     }
-    ctx.globalAlpha=1;
-    rect(0,H*.82,W,H*.18,'#f7f2ff22');
+    if(!onGround && jumps===1){
+      vy = 0.34; jumps=2; jumpBufferTimer=0; return;
+    }
   }
 
-  function drawPlayer(){
-    // shadow
-    circle(player.x, H*.8, player.r*.9, 'rgba(0,0,0,.10)');
-    // oreo layers
-    circle(player.x-3, player.y+2, player.r, '#3b2f2f');
-    circle(player.x, player.y, player.r*.78, '#fff');
-    circle(player.x+2, player.y-2, player.r, '#4a3a3a');
-
-    // emboss
-    ctx.fillStyle='#2d2222';
-    for (let i=0;i<12;i++){ const a=i/12*Math.PI*2; circle(player.x+Math.cos(a)*player.r*.6, player.y+Math.sin(a)*player.r*.6, 2, '#2d2222'); }
-
-    // eyes (they're back!)
-    const blink=(Math.sin(t*8)>-0.1);
-    if (blink){ circle(player.x-6, player.y-4, 3, '#111'); circle(player.x+6, player.y-4, 3, '#111'); }
-    else { rect(player.x-9,player.y-5,6,2,'#111'); rect(player.x+3,player.y-5,6,2,'#111'); }
-    ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(player.x, player.y+6, 7, .15*Math.PI, .85*Math.PI); ctx.stroke();
-
-    if (player.shield>0){ ctx.strokeStyle='#00d6ff'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(player.x, player.y, player.r+4, 0, Math.PI*2); ctx.stroke(); }
-  }
-
-  // Spawns
-  let spawnT=0.2, goodieT=0.8, crumbT=0.3; // start fast
-  function spawnObstacle(){
-    const S=levels[levelIndex].spawn; const r=Math.random();
-    let type = r<S.cube ? 'cube' : (r<S.cube+S.fall ? 'fall' : 'wall');
-    if (type==='cube'){ const s=randI(player.r*1.0, player.r*1.4); obstacles.push({type,x:W+40,y:H*.82-s,w:s,h:s,vx:0,vy:0}); }
-    else if (type==='fall'){ const s=randI(player.r*0.9, player.r*1.3); obstacles.push({type,x:W+randI(0,60),y:-s,w:s,h:s,vx:-speed*.12,vy:rand(2.6,3.6)}); }
-    else { const w=randI(player.r*1.8, player.r*2.4), h=randI(player.r*0.9, player.r*1.2); obstacles.push({type,x:W+40,y:H*.82-h,w,h,vx:0,vy:0}); }
-  }
-  function spawnGoodie(){
-    const B=levels[levelIndex].bonus; const r=Math.random();
-    let type = r<B.discount ? 'discount' : (r<B.discount+B.prepack ? 'prepack' : 'erid');
-    const y=rand(H*.45,H*.72);
-    goodies.push({type,x:W+40,y,r: Math.max(12, Math.floor(player.r*.7)), got:false});
-  }
-  function spawnCrumbs(){
-    const num = randI(4,7), baseX = W + 40, baseY = rand(H*.48, H*.75), spacing = Math.max(28, Math.floor(player.r*1.25));
-    for (let i=0;i<num;i++){ crumbs.push({x: baseX + i*spacing, y: baseY - Math.sin(i/num*Math.PI)*Math.max(10, player.r*0.8), r: Math.max(6, Math.floor(player.r*0.35)), got:false}); }
-  }
-
-  // Update
   function update(dt){
-    if (state!=='running') return;
-    t+=dt; timeLeft-=dt;
-    if (timeLeft<=0){ levelIndex++; if (levelIndex>=levels.length){ win(); return; } setupLevel(levelIndex); }
+    t += dt;
+    timeLeft -= dt;
+    if(timeLeft<=0){
+      levelIdx++;
+      if(levelIdx>=levels.length){ win(); return; }
+      levelUp(levelIdx);
+    }
+    speed = levels[levelIdx].speed + Math.min(0.06, Math.floor(t/12)*0.01);
+    ground.position.z += speed*120*dt;
+    if(ground.position.z>-20) ground.position.z = -60;
 
-    speed = levels[levelIndex].speedBase + Math.min(3, Math.floor(t/12));
-    if (player.boost>0){ speed += 1.5; player.boost -= dt; }
+    // spawn
+    spawnT-=dt; if(spawnT<=0){ spawnObstacle(); spawnT= 0.7 + Math.random()*0.8; }
+    goodieT-=dt; if(goodieT<=0){ spawnGoodie(); goodieT= 1.0 + Math.random()*0.8; }
+    crumbT-=dt; if(crumbT<=0){ spawnCrumbs(); crumbT= 0.9 + Math.random()*0.7; }
 
-    // Physics
-    player.vy += H*0.00155; // gravity
-    player.y += player.vy;
-    const gy=H*.78;
-    if (player.y>gy){
-      player.y=gy; player.vy=0;
-      if (!player.onGround){ player.onGround=true; player.jumps=0; }
+    // move items toward player (scroll world)
+    for(const arr of [obstacles, goodies, crumbs]){
+      for(const m of arr){ m.position.z += speed*120*dt; if(m.userData.fall){ m.position.y = Math.max(0.25, m.position.y - (m.userData.vy||0.03)); } }
+      for(let i=arr.length-1;i>=0;i--){ if(arr[i].position.z>6) { scene.remove(arr[i]); arr.splice(i,1); } }
     }
 
-    // Spawns
-    spawnT-=dt; if (spawnT<=0){ spawnObstacle(); spawnT=rand(0.85,1.55); }
-    goodieT-=dt; if (goodieT<=0){ spawnGoodie(); goodieT=rand(1.0,1.6); }
-    crumbT-=dt; if (crumbT<=0){ spawnCrumbs(); crumbT=rand(0.85,1.35); }
+    // gravity
+    vy -= G * (1 + (jumps===2?0.2:0));
+    player.position.y += vy;
+    if(player.position.y<=groundY){
+      player.position.y = groundY;
+      if(!onGround){ onGround=true; jumps=0; }
+    }else{
+      if(onGround){ onGround=false; coyoteTimer=COYOTE; }
+    }
+    if(coyoteTimer>0) coyoteTimer -= dt;
+    if(jumpBufferTimer>0){ jumpBufferTimer -= dt; if(onGround){ tryPerformJump(); } }
 
-    // Move
-    for (const o of obstacles){ o.x -= speed + (o.vx||0); o.y += o.vy||0; if (o.type==='fall' && o.y>H*.82-o.h){ o.y=H*.82-o.h; o.vy=0; } }
-    for (let i=obstacles.length-1;i>=0;i--){ if (obstacles[i].x + obstacles[i].w < -40) obstacles.splice(i,1); }
-
-    for (const g of goodies){ g.x -= speed*.84; }
-    for (let i=goodies.length-1;i>=0;i--){ if (goodies[i].x < -40 || goodies[i].got) goodies.splice(i,1); }
-
-    for (const c of crumbs){ c.x -= speed*.9; }
-    for (let i=crumbs.length-1;i>=0;i--){ if (crumbs[i].x < -40 || crumbs[i].got) crumbs.splice(i,1); }
-
-    // Collisions
-    for (const o of obstacles){
-      if (circleRect(player.x, player.y, player.r*0.85, o.x,o.y,o.w,o.h)){
-        if (player.shield>0){ player.shield=0; spark(o.x+o.w/2,o.y+o.h/2,'#00d6ff'); o.x=-999; }
-        else { gameOver(); return; }
+    // collisions
+    const px=player.position.x, py=player.position.y, pz=player.position.z;
+    for(let i=obstacles.length-1;i>=0;i--){
+      const m=obstacles[i];
+      if(Math.abs(m.position.z-pz)<0.5 && Math.abs(m.position.x-px)<0.6 && Math.abs(m.position.y-py)<0.5){
+        gameOver(); return;
       }
     }
-    for (const g of goodies){
-      if (!g.got && Math.hypot(player.x-g.x, player.y-g.y) < player.r + g.r){
-        g.got=true; if (g.type==='discount'){ player.boost=3.0; toast('Допскидка +3% 🚀'); }
-        else if (g.type==='prepack'){ player.shield=7.0; toast('Препак — щит на 7 сек 🛡️'); }
-        else { confettiBurst(24); toast('Согласовано без ERID ✨'); }
+    for(let i=goodies.length-1;i>=0;i--){
+      const m=goodies[i];
+      if(m.position.distanceTo(player.position)<0.7){
+        const type=m.userData.type;
+        if(type==='discount'){ speedBoost=1.6; boostTimer=2.8; toast('Допскидка +3% 🚀'); }
+        else if(type==='prepack'){ shieldTimer=3.6; toast('Препак — щит'); }
+        else { toast('Согласовано без ERID ✨'); }
+        scene.remove(m); goodies.splice(i,1);
       }
     }
-    for (const c of crumbs){
-      if (!c.got && Math.hypot(player.x-c.x, player.y-c.y) < player.r + c.r){
-        c.got = true; score += 1; spark(c.x,c.y,'#6d3b2a');
+    for(let i=crumbs.length-1;i>=0;i--){
+      const m=crumbs[i];
+      if(m.position.distanceTo(player.position)<0.6){
+        score++; scene.remove(m); crumbs.splice(i,1);
       }
     }
 
-    ui.score.textContent='Очки (крошки): '+score;
-    ui.best.textContent='Рекорд: '+Math.max(best, score);
-    ui.status.textContent=`Осталось: ${Math.max(0, Math.ceil(timeLeft))}с`;
+    // boosters
+    if(boostTimer>0){ boostTimer-=dt; speed*=speedBoost; }
+    if(shieldTimer>0){ shieldTimer-=dt; }
+
+    // eyes blink
+    player.rotation.y = Math.sin(t*0.7)*0.1;
+
+    // UI
+    hud.score.textContent = 'Очки (крошки): ' + score;
+    hud.best.textContent = 'Рекорд: ' + Math.max(best, score);
+    hud.status.textContent = `Осталось: ${Math.max(0, Math.ceil(timeLeft))}с`;
   }
 
-  function circleRect(cx,cy,cr, rx,ry,rw,rh){ const nx=Math.max(rx,Math.min(cx,rx+rw)); const ny=Math.max(ry,Math.min(cy,ry+rh)); const dx=cx-nx, dy=cy-ny; return dx*dx + dy*dy < cr*cr; }
-
-  // FX
-  function spark(x,y,color){ for (let i=0;i<10;i++){ particles.push({x,y, vx:rand(-2,2), vy:rand(-3,-0.5), life:rand(0.4,0.9), color: color||'#00d6ff'}); } }
-  function confettiBurst(n){ for (let i=0;i<n;i++){ confetti.push({x:rand(0,W), y:rand(-40,-10), vx:rand(-0.5,0.5), vy:rand(2,4), life:rand(1,2), color:(i%2?PURPLE:BLUE)}); } }
-
-  function render(){
-    drawBG();
-    // obstacles
-    for (const o of obstacles){
-      if (o.type==='cube'){ rect(o.x,o.y,o.w,o.h,'#ff4b6e'); label(o,'OOS'); }
-      else if (o.type==='fall'){ rect(o.x,o.y,o.w,o.h,'#e8a36b'); for (let k=0;k<o.w;k+=6){ rect(o.x+k,o.y+2,3,o.h-4,'#d1844a'); } label(o,'Нет стока'); }
-      else { rect(o.x,o.y,o.w,o.h,'#ffb84b'); label(o,'ERP упал'); }
-    }
-    // goodies
-    for (const g of goodies){
-      if (g.type==='discount'){ rect(g.x-16,g.y-12,32,24,BLUE); ctx.fillStyle='#fff'; ctx.font=`${Math.max(10, Math.floor(player.r*.6))}px sans-serif`; ctx.fillText('+3%', g.x-12, g.y+5); }
-      else if (g.type==='prepack'){ circle(g.x,g.y,Math.max(12, Math.floor(player.r*.7))+2,'#00d6ff'); circle(g.x,g.y,Math.max(12, Math.floor(player.r*.7))-4,'#bff2ff'); }
-      else { ctx.fillStyle=PURPLE; star(g.x,g.y,Math.max(12, Math.floor(player.r*.7))+4, Math.max(12, Math.floor(player.r*.7))-2, 6); }
-    }
-    // crumbs
-    for (const c of crumbs){ circle(c.x, c.y, Math.max(6, Math.floor(player.r*0.35)), '#6d3b2a'); }
-
-    // particles
-    for (let i=particles.length-1;i>=0;i--){ const p=particles[i]; ctx.globalAlpha=Math.max(0,p.life); rect(p.x,p.y,3,3,p.color||'#00d6ff'); ctx.globalAlpha=1; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=0.02; if (p.life<=0) particles.splice(i,1); }
-    // confetti
-    for (let i=confetti.length-1;i>=0;i--){ const c=confetti[i]; rect(c.x,c.y,4,8,c.color); c.x+=c.vx; c.y+=c.vy; c.vy+=0.02; c.life-=0.01; if (c.life<=0) confetti.splice(i,1); }
-
-    // player
-    drawPlayer();
+  function levelUp(i){
+    timeLeft = levels[i].seconds;
+    toast('Уровень: '+levels[i].name+' • Двойной прыжок');
+    hud.level.textContent = 'Уровень: '+levels[i].name;
   }
 
-  function label(o, text){ ctx.fillStyle='#1d133d'; ctx.font=`${Math.max(10, Math.floor(player.r*.6))}px sans-serif`; ctx.fillText(text, o.x+6, o.y-6); }
-  function star(x,y,outer,inner,points){ ctx.beginPath(); for (let i=0;i<points*2;i++){ const ang=Math.PI*i/points; const r=(i%2===0?outer:inner); ctx.lineTo(x+Math.cos(ang)*r, y+Math.sin(ang)*r); } ctx.closePath(); ctx.fill(); }
+  function toast(msg){ hud.toast.textContent=msg; hud.toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>hud.toast.classList.remove('show'), 2000); }
 
-  // LOOP
-  function loop(ts){ const now = ts || performance.now(); const dt=Math.min(0.05, (now-last)/1000 || 0); last=now; if (state==='running') update(dt); render(); requestAnimationFrame(loop); } requestAnimationFrame(loop);
+  // Spawn timers
+  let spawnT=0.3, goodieT=0.7, crumbT=0.2;
 
-  // Controls — attach only after start
-  function handleJump(){
-    if (state!=='running') return;
-    if (player.onGround && player.jumps===0){ player.vy = -Math.max(12, H*0.024); player.onGround=false; player.jumps=1; return; }
-    if (!player.onGround && player.jumps===1){ player.vy = -Math.max(12, H*0.024); player.jumps=2; }
+  // Boosters
+  let boostTimer=0, shieldTimer=0, speedBoost=1.0;
+
+  // Loop
+  let last=performance.now(), running=false;
+  function loop(){
+    const now=performance.now(); const dt=Math.min(0.05, (now-last)/1000); last=now;
+    if(running) update(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
   }
-  function attachGameplayInputs(){
-    canvas.addEventListener('pointerdown', handleJump, {passive:true});
-    canvas.addEventListener('touchstart', handleJump, {passive:true});
-    canvas.addEventListener('mousedown', handleJump);
-    window.addEventListener('keydown', e=>{ if (e.code==='Space' || e.code==='ArrowUp'){ e.preventDefault(); handleJump(); } if (e.code==='KeyP'){ togglePause(); } }, {passive:false});
-  }
+  loop();
 
   // Start / Pause / Restart
-  ui.startBtn.addEventListener('click', ()=>{ if (state==='start'){ ui.start.classList.add('hidden'); resetAll(); attachGameplayInputs(); }}, {passive:true});
-  ui.pauseBtn.addEventListener('click', togglePause);
-  ui.restartBtn.addEventListener('click', ()=>{ ui.over.classList.add('hidden'); ui.victory.classList.add('hidden'); resetAll(); });
-  function togglePause(){ if (state==='running'){ state='paused'; ui.pause.classList.remove('hidden'); } else if (state==='paused'){ state='running'; ui.pause.classList.add('hidden'); } }
-
-  function gameOver(){ state='over'; best=Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best); document.getElementById('overMsg').textContent=`Крошек собрано: ${score} • Рекорд: ${best}`; ui.over.classList.remove('hidden'); }
-  function win(){ state='victory'; best=Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best); ui.victory.classList.remove('hidden'); typeCredits(`Developed by:\nΛlєксαndr Rødіonσv & Λlєxєy BlІnσv`); confettiBurst(80); }
-
-  // Countdown 3-2-1 before run (visible feedback in Safari)
-  function startCountdown(){
-    let n=3; ui.count.textContent=n; ui.count.classList.remove('hidden');
-    const tick=()=>{ n--; if(n>0){ ui.count.textContent=n; setTimeout(tick, 600);} else { ui.count.classList.add('hidden'); state='running'; } };
+  function start(){
+    hud.start.classList.add('hidden'); document.getElementById('hint').style.display = isTouch ? 'block':'none';
+    levelUp(0); score=0; running=false; timeLeft=levels[0].seconds; t=0;
+    player.position.set(0, groundY, 0); vy=0; jumps=0; onGround=true; coyoteTimer=0;
+    // countdown
+    let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
+    const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick, 600);} else { hud.count.classList.add('hidden'); running=true; } };
     setTimeout(tick, 600);
   }
 
-  function typeCredits(text){
-    ui.credits.textContent = ''; let i=0;
-    (function tick(){ ui.credits.textContent = text.slice(0,i) + (i%2?'':'█'); i++; if (i<=text.length) setTimeout(tick,28); })();
+  function gameOver(){
+    running=false;
+    best = Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best);
+    toast('Игра окончена');
+    setTimeout(start, 1200);
+  }
+  function win(){
+    running=false;
+    best = Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best);
+    toast('Год закрыт на 120% KPI 🎉');
+    setTimeout(start, 1800);
   }
 
-  // Safety: show errors as a small banner so we see them на проде
-  window.addEventListener('error', e=>{ ui.debug.textContent = (e && e.message) ? e.message : 'Script error'; ui.debug.classList.add('show'); });
+  // Input
+  function onJump(){ requestJump(); }
+  window.addEventListener('keydown', e=>{ if(e.code==='Space' || e.code==='ArrowUp') { e.preventDefault(); onJump(); } if(e.code==='KeyP'){ running=!running; }});
+  renderer.domElement.addEventListener('pointerdown', onJump, {passive:true});
+  if(isTouch){ renderer.domElement.addEventListener('touchstart', onJump, {passive:true}); }
 
-})();</script>
+  hud.startBtn.addEventListener('click', start);
+  hud.pauseBtn.addEventListener('click', ()=>{ running = !running; });
+  hud.restartBtn.addEventListener('click', start);
+
+  // Resize
+  window.addEventListener('resize', ()=>{
+    const w = window.innerWidth, h=window.innerHeight;
+    renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
+  });
+
+  // Init labels
+  hud.level.textContent = 'Уровень: —';
+  hud.score.textContent = 'Очки (крошки): 0';
+  hud.best.textContent = 'Рекорд: ' + best;
+  hud.status.textContent = '';
+})();
+</script>
 </body>
 </html>
