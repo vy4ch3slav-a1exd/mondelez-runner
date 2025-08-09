@@ -3,51 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mondelez Runner — FINAL</title>
+<title>Mondelez Runner — COMPAT</title>
 <meta name="theme-color" content="#8a5bff">
 <style>
-  :root{
-    --accent:#8a5bff; --ui:#201a4f; --bg:#fff3fc; --mint:#00e6a3; --blue:#2b7bd4; --rose:#ff6b8a;
-    --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
-    --safe-left:env(safe-area-inset-left); --safe-right:env(safe-area-inset-right);
-  }
+  :root{ --accent:#8a5bff; --ui:#201a4f; --bg:#fff3fc; --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom); --safe-left:env(safe-area-inset-left); --safe-right:env(safe-area-inset-right); }
   html,body{height:100%;margin:0;background:var(--bg);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
   canvas{display:block;touch-action:none}
-  /* HUD */
   #hud{position:fixed;inset:0;pointer-events:none}
-  .hud-box{position:absolute;left:calc(12px + var(--safe-left));top:calc(10px + var(--safe-top));color:#fff;
-    text-shadow:0 3px 12px rgba(0,0,0,.45);font-weight:800}
+  .hud-box{position:absolute;left:calc(12px + var(--safe-left));top:calc(10px + var(--safe-top));color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.45);font-weight:800}
   .hud-line{font-size:13px}.hud-big{font-size:16px;margin-bottom:2px}
   .btns{position:absolute;right:calc(12px + var(--safe-right));top:calc(10px + var(--safe-top));display:flex;gap:8px;pointer-events:auto}
   .btn{border:none;border-radius:12px;padding:10px 16px;background:var(--ui);color:#fff;font-weight:800;box-shadow:0 8px 26px rgba(0,0,0,.25);cursor:pointer}
-  .btn.sec{background:var(--blue)} .btn.ghost{background:rgba(20,20,35,.55);border:2px solid rgba(255,255,255,.5)}
-  .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(9vh + var(--safe-bottom));
-    background:rgba(20,20,35,.92);color:#e7e7ff;padding:10px 14px;border:1px solid rgba(122,75,212,.4);
-    border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .25s,transform .25s;white-space:nowrap}
+  .btn.sec{background:#2b7bd4} .btn.ghost{background:rgba(20,20,35,.55);border:2px solid rgba(255,255,255,.5)}
+  .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(9vh + var(--safe-bottom));background:rgba(20,20,35,.92);color:#e7e7ff;padding:10px 14px;border:1px solid rgba(122,75,212,.4);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .25s,transform .25s;white-space:nowrap}
   .toast.show{opacity:1;transform:translate(-50%,-8px)}
-  .pill{position:absolute;left:50%;top:calc(12px + var(--safe-top));transform:translateX(-50%);background:rgba(255,255,255,.9);
-    color:#1d1d2e;padding:6px 12px;border-radius:999px;border:2px solid #c9b7ff;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;pointer-events:none}
+  .pill{position:absolute;left:50%;top:calc(12px + var(--safe-top));transform:translateX(-50%);background:rgba(255,255,255,.9);color:#1d1d2e;padding:6px 12px;border-radius:999px;border:2px solid #c9b7ff;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;pointer-events:none}
   .badge{position:absolute;right:calc(12px + var(--safe-right));bottom:calc(12px + var(--safe-bottom));color:#223;background:rgba(255,255,255,.75);padding:6px 10px;border-radius:10px;font:11px/1.2 ui-monospace,Menlo,Consolas,monospace}
-  /* Controls */
   #controls{position:fixed;inset:0;pointer-events:none}
   #controls .zone{position:absolute;top:0;bottom:0;width:50%;pointer-events:auto}
   #controls .left{left:0} #controls .right{right:0}
   .softrow{position:absolute;bottom:calc(16px + var(--safe-bottom));left:calc(12px + var(--safe-left));display:flex;gap:10px;pointer-events:auto}
   .softkey{background:rgba(20,20,35,.6);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 14px;border-radius:14px;font-weight:900;user-select:none}
-  .softbtn{position:absolute;bottom:calc(16px + var(--safe-bottom));right:calc(12px + var(--safe-right));
-    background:rgba(20,20,35,.6);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 14px;border-radius:14px;font-weight:900;pointer-events:auto}
-  .softbtn.mid{right:calc(92px + var(--safe-right))} .softbtn.left{right:calc(172px + var(--safe-right))}
-  /* Start */
+  .softbtn{position:absolute;bottom:calc(16px + var(--safe-bottom));right:calc(12px + var(--safe-right));background:rgba(20,20,35,.6);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 14px;border-radius:14px;font-weight:900;pointer-events:auto}
+  .softbtn.mid{right:calc(92px + var(--safe-right))}
   #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-  .card{pointer-events:auto;max-width:min(980px,96vw);background:#fff;border:3px solid var(--accent);border-radius:20px;
-    padding:18px 20px;color:#2b225a;text-align:center;box-shadow:0 22px 70px rgba(114,84,196,.25)}
+  .card{pointer-events:auto;max-width:min(980px,96vw);background:#fff;border:3px solid var(--accent);border-radius:20px;padding:18px 20px;color:#2b225a;text-align:center;box-shadow:0 22px 70px rgba(114,84,196,.25)}
   .title{font-size:clamp(24px,4vw,40px);margin:6px 0 10px}
-  .dev{font-family:ui-monospace,Menlo,Consolas,monospace;color:#00e6a3;text-shadow:0 0 8px rgba(0,255,149,.35);
-    font-size:clamp(13px,2.2vw,18px);margin:6px 0 12px}
+  .dev{font-family:ui-monospace,Menlo,Consolas,monospace;color:#00e6a3;text-shadow:0 0 8px rgba(0,255,149,.35);font-size:clamp(13px,2.2vw,18px);margin:6px 0 12px}
   .start-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px}
   .btnlg{border:none;border-radius:12px;padding:12px 18px;background:var(--ui);color:#fff;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25);cursor:pointer}
   .diff{background:#efe9ff;color:#2b225a;border:2px solid var(--accent)}
-  .diff.easy{border-color:var(--mint)}.diff.mid{border-color:var(--blue)}.diff.hard{border-color:var(--rose)}
 </style>
 </head>
 <body>
@@ -56,328 +41,173 @@
       <div class="hud-big" id="level">Уровень: —</div>
       <div class="hud-line" id="score">Очки (крошки): 0</div>
       <div class="hud-line" id="best">Рекорд: 0</div>
-      <div class="hud-line" id="status"></div>
     </div>
     <div class="btns">
-      <button class="btn ghost" id="help">?</button>
-      <button class="btn" id="settings">Настройки</button>
-      <button class="btn" id="restart">Заново</button>
-      <button class="btn sec" id="pause">Пауза</button>
+      <button class="btn ghost" onclick="toast('Собирай крошки, избегай препятствий. Свайпы: ←/→, ↑, ↓')">?</button>
+      <button class="btn" onclick="reset(false)">Заново</button>
+      <button class="btn sec" onclick="window._paused=!window._paused;toast(window._paused?'Пауза':'Продолжаем')">Пауза</button>
     </div>
-    <div class="pill" id="tip">Левая половина — полосы • Правая — прыжок/слайд (удержание)</div>
+    <div class="pill">Левая половина — полосы • Правая — прыжок/слайд</div>
     <div class="toast" id="toast"></div>
-    <div class="badge">FINAL</div>
+    <div class="badge">COMPAT</div>
   </div>
 
   <div id="controls" aria-hidden="false">
     <div class="zone left"  id="zoneLeft"></div>
     <div class="zone right" id="zoneRight"></div>
     <div class="softrow">
-      <div class="softkey" id="btnLeft">◀︎</div>
-      <div class="softkey" id="btnRight">▶︎</div>
+      <div class="softkey" onclick="setLane(-1)">◀︎</div>
+      <div class="softkey" onclick="setLane(+1)">▶︎</div>
     </div>
-    <div class="softbtn" id="btnJump">JUMP</div>
-    <div class="softbtn mid" id="btnSlide">SLIDE</div>
+    <div class="softbtn mid" onclick="window._slideHeld=true; setTimeout(()=>window._slideHeld=false,450)">SLIDE</div>
+    <div class="softbtn" onclick="window._jumpPressed=true">JUMP</div>
   </div>
 
   <div id="start">
     <div class="card">
       <div style="font-size:46px;margin-bottom:6px;">🍪🎮🍭</div>
-      <div class="title">Mondelez Runner — FINAL</div>
+      <div class="title">Mondelez Runner — COMPAT</div>
       <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
       <div class="start-actions">
-        <button class="btnlg diff easy" id="startEasy">🥧 ЛЕГКО</button>
-        <button class="btnlg diff mid"  id="startMid">🍫 СРЕДНЕ</button>
-        <button class="btnlg diff hard" id="startHard">⚡ СЛОЖНО</button>
+        <button class="btnlg diff" onclick="start('easy')">🥧 ЛЕГКО</button>
+        <button class="btnlg diff" onclick="start('mid')">🍫 СРЕДНЕ</button>
+        <button class="btnlg diff" onclick="start('hard')">⚡ СЛОЖНО</button>
       </div>
     </div>
   </div>
 
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js';
-    import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/postprocessing/EffectComposer.js';
-    import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/postprocessing/RenderPass.js';
-    import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/postprocessing/UnrealBloomPass.js';
-    import { SMAAPass } from 'https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/postprocessing/SMAAPass.js';
+  <!-- Three.js (global) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160/build/three.min.js"></script>
+  <script>
+  // Globals for simple compatibility
+  let renderer, scene, camera, skyMesh, ground, scenery, player;
+  let laneCount=3, laneIdx=1, targetX=0;
+  const laneX3=[-1.6,0,1.6], laneX5=[-2.2,-1.1,0,1.1,2.2];
+  const laneX=()=> laneCount===5?laneX5:laneX3;
+  const obstacles=[], crumbs=[], bonuses=[];
+  let velY=0, onGround=true, sliding=false, slideT=0, speed=11;
+  let spawnTimer=0, crumbTimer=0, bonusTimer=0, score=0, combo=0, shieldT=0, shakeT=0;
+  let started=false; window._paused=false;
+  window._jumpPressed=false; window._slideHeld=false;
 
-    // ------- helpers
-    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-    const rand=(a,b)=>a+Math.random()*(b-a);
-    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand=(a,b)=>a+Math.random()*(b-a);
+  function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1700); }
+  function setScore(){ document.getElementById('score').textContent='Очки (крошки): '+score+(combo>1?` (комбо x${1+Math.floor(combo/3)})`:'' ); }
 
-    // ------- renderer
-    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  function init(){
+    renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
     renderer.setSize(innerWidth, innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.45;
+    renderer.toneMappingExposure = 1.4;
     document.body.prepend(renderer.domElement);
 
-    // ------- scene & cam
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, 0.1, 800);
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(68, innerWidth/innerHeight, .1, 800);
     camera.position.set(0.1,2.0,6.4);
     scene.fog = new THREE.Fog(0xfff5fb, 18, 140);
 
-    // lights
     const hemi = new THREE.HemisphereLight(0xfff3d1, 0xd8c0a0, 0.95);
-    const sun  = new THREE.DirectionalLight(0xffffff, 1.35); sun.position.set(8,7,4); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+    const sun  = new THREE.DirectionalLight(0xffffff, 1.35); sun.position.set(8,7,4);
     const rim  = new THREE.DirectionalLight(0xff9bd4, 0.9); rim.position.set(-6,3,-2);
     scene.add(hemi,sun,rim);
 
     // sky
-    const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(220,32,16), new THREE.MeshBasicMaterial({ side:THREE.BackSide }));
+    skyMesh = new THREE.Mesh(new THREE.SphereGeometry(220,32,16), new THREE.MeshBasicMaterial({ side:THREE.BackSide }));
     scene.add(skyMesh);
-    function makeSky(a,b,c){ const cv=document.createElement('canvas'); cv.width=2; cv.height=256; const g=cv.getContext('2d');
-      const gr=g.createLinearGradient(0,0,0,256); gr.addColorStop(0,a); gr.addColorStop(.6,b); gr.addColorStop(1,c);
-      g.fillStyle=gr; g.fillRect(0,0,2,256); return new THREE.CanvasTexture(cv); }
-    function setSky(i){ const themes=[ ['#fff9ff','#eef6ff','#ffeaf4'], ['#fff3e6','#ffe9f5','#fff7cf'], ['#ecfff8','#e6f0ff','#fff0ff'] ]; const t=themes[i%themes.length]; skyMesh.material.map=makeSky(...t); skyMesh.material.needsUpdate=true; }
-    setSky(0);
+    const skyTex = (a,b,c)=>{ const cv=document.createElement('canvas'); cv.width=2; cv.height=256; const g=cv.getContext('2d'); const gr=g.createLinearGradient(0,0,0,256); gr.addColorStop(0,a); gr.addColorStop(.6,b); gr.addColorStop(1,c); g.fillStyle=gr; g.fillRect(0,0,2,256); return new THREE.CanvasTexture(cv); }
+    skyMesh.material.map = skyTex('#fff9ff','#eef6ff','#ffeaf4');
 
     // ground
-    function texGround(){ const c=document.createElement('canvas'); c.width=512; c.height=512; const g=c.getContext('2d');
-      g.fillStyle='#fce6d2'; g.fillRect(0,0,512,512);
-      const cols=['#ffd1dc','#ffe8aa','#d7f1ff','#e9d4ff']; for(let y=0;y<512;y+=32){ for(let x=0;x<512;x+=32){
-        g.fillStyle=cols[(x/32+y/32)%cols.length]; g.globalAlpha=.22; g.fillRect(x+8,y+8,20,20);
-      } } g.globalAlpha=1; return new THREE.CanvasTexture(c); }
+    const texGround=()=>{ const c=document.createElement('canvas'); c.width=512; c.height=512; const g=c.getContext('2d'); g.fillStyle='#fce6d2'; g.fillRect(0,0,512,512);
+      const cols=['#ffd1dc','#ffe8aa','#d7f1ff','#e9d4ff']; for(let y=0;y<512;y+=32){ for(let x=0;x<512;x+=32){ g.fillStyle=cols[(x/32+y/32)%cols.length]; g.globalAlpha=.22; g.fillRect(x+8,y+8,20,20);} } g.globalAlpha=1; return new THREE.CanvasTexture(c); };
     const gtex = texGround(); gtex.wrapS=gtex.wrapT=THREE.RepeatWrapping; gtex.repeat.set(10,160);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 1400), new THREE.MeshStandardMaterial({ map:gtex, metalness:.06, roughness:.95 }));
-    ground.rotation.x=-Math.PI/2; ground.position.z=-480; ground.receiveShadow=true; scene.add(ground);
+    ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 1400), new THREE.MeshStandardMaterial({ map:gtex, metalness:.06, roughness:.95 }));
+    ground.rotation.x=-Math.PI/2; ground.position.z=-480; scene.add(ground);
 
-    // lane lines
-    const laneLines=[];
-    function makeLaneLine(x){ const m=new THREE.Mesh(new THREE.PlaneGeometry(0.12,160), new THREE.MeshBasicMaterial({ color:0x3b6cff, transparent:true, opacity:.58 }));
-      m.rotation.x=-Math.PI/2; m.position.set(x,0,-70); scene.add(m); laneLines.push(m); }
-    [-2.2,-1.1,0,1.1,2.2].forEach(x=>makeLaneLine(x));
-
-    // candy scenery
-    function addCandyParallax(){
-      const group=new THREE.Group();
-      for(let i=0;i<28;i++){
-        const stick=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,1.4,12), new THREE.MeshStandardMaterial({ color:0xffffff }));
-        const head=new THREE.Mesh(new THREE.SphereGeometry(.46,18,16), new THREE.MeshStandardMaterial({ color:(i%3===0?0xff86b7:i%3===1?0x7ad6ff:0xffc07a), roughness:.55 }));
-        const t=new THREE.Group(); t.add(stick,head); stick.position.y=.7; head.position.y=1.4; t.position.set((Math.random()*2-1)*34,0,-80-Math.random()*300);
-        t.position.x += (t.position.x>0? 7:-7); group.add(t);
-        const donut=new THREE.Mesh(new THREE.TorusGeometry(.9+Math.random()*.6,.22,16,32), new THREE.MeshStandardMaterial({ color:0xffc07a, roughness:.75 }));
-        donut.position.set((Math.random()*2-1)*30,.9,-80-Math.random()*300); donut.rotation.x=Math.PI/2; group.add(donut);
-      }
-      scene.add(group); return group;
+    // scenery
+    scenery = new THREE.Group(); scene.add(scenery);
+    for(let i=0;i<28;i++){ const stick=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,1.4,12), new THREE.MeshStandardMaterial({ color:0xffffff }));
+      const head=new THREE.Mesh(new THREE.SphereGeometry(.46,18,16), new THREE.MeshStandardMaterial({ color:(i%3===0?0xff86b7:i%3===1?0x7ad6ff:0xffc07a) }));
+      const t=new THREE.Group(); t.add(stick,head); stick.position.y=.7; head.position.y=1.4; t.position.set((Math.random()*2-1)*34,0,-80-Math.random()*300); t.position.x += (t.position.x>0?7:-7); scenery.add(t);
+      const donut=new THREE.Mesh(new THREE.TorusGeometry(.9+Math.random()*.6,.22,16,32), new THREE.MeshStandardMaterial({ color:0xffc07a })); donut.position.set((Math.random()*2-1)*30,.9,-80-Math.random()*300); donut.rotation.x=Math.PI/2; scenery.add(donut);
     }
-    const scenery = addCandyParallax();
 
-    // hero (oreo)
-    function createOreo(){
-      const g1=new THREE.CylinderGeometry(.52,.52,.2,64);
-      const g2=new THREE.CylinderGeometry(.49,.49,.09,48);
-      const matB=new THREE.MeshStandardMaterial({ color:0x3b2f2f, metalness:.38, roughness:.5 });
-      const matC=new THREE.MeshStandardMaterial({ color:0xffffff, metalness:.06, roughness:.32, emissive:0x222222, emissiveIntensity:.05 });
-      const top=new THREE.Mesh(g1,matB), bot=new THREE.Mesh(g1,matB), cream=new THREE.Mesh(g2,matC);
-      top.position.y=.14; bot.position.y=-.14; top.castShadow=bot.castShadow=cream.castShadow=true;
-      const group=new THREE.Group(); group.add(top,bot,cream);
-      const eye=new THREE.SphereGeometry(.038,16,12), eyeM=new THREE.MeshStandardMaterial({color:0x111111});
-      const e1=new THREE.Mesh(eye,eyeM), e2=new THREE.Mesh(eye,eyeM); e1.position.set(-.12,.06,.49); e2.position.set(.12,.06,.49); group.add(e1,e2);
-      return group;
-    }
-    const player=createOreo(); player.position.set(0,.68,0); scene.add(player);
+    // hero
+    const g1=new THREE.CylinderGeometry(.52,.52,.2,64); const g2=new THREE.CylinderGeometry(.49,.49,.09,48);
+    const matB=new THREE.MeshStandardMaterial({ color:0x3b2f2f, metalness:.38, roughness:.5 }); const matC=new THREE.MeshStandardMaterial({ color:0xffffff, metalness:.06, roughness:.32, emissive:0x222222, emissiveIntensity:.05 });
+    const top=new THREE.Mesh(g1,matB), bot=new THREE.Mesh(g1,matB), cream=new THREE.Mesh(g2,matC); top.position.y=.14; bot.position.y=-.14;
+    player=new THREE.Group(); player.add(top,bot,cream); const eye=new THREE.SphereGeometry(.038,16,12), eyeM=new THREE.MeshStandardMaterial({color:0x111111});
+    const e1=new THREE.Mesh(eye,eyeM), e2=new THREE.Mesh(eye,eyeM); e1.position.set(-.12,.06,.49); e2.position.set(.12,.06,.49); player.add(e1,e2);
+    player.position.set(0,.68,0); scene.add(player);
 
-    // lanes
-    let laneCount=3;
-    const laneX3=[-1.6,0,1.6], laneX5=[-2.2,-1.1,0,1.1,2.2];
-    const laneX=()=>laneCount===5?laneX5:laneX3;
-    let laneIdx=1, targetX=laneX()[laneIdx];
-
-    // entities
-    const obstacles=[], crumbs=[], bonuses=[];
-
-    // makers
-    function mkBarrier(){ const bar=new THREE.Group();
-      const base=new THREE.Mesh(new THREE.BoxGeometry(1.2,.4,.3), new THREE.MeshStandardMaterial({ color:0x3a3a4a }));
-      const bar1=new THREE.Mesh(new THREE.BoxGeometry(1.2,.18,.18), new THREE.MeshStandardMaterial({ color:0xff8c63, emissive:0xff8c63, emissiveIntensity:.35 })); bar1.position.y=.25;
-      const stripes=new THREE.Mesh(new THREE.BoxGeometry(1.2,.08,.19), new THREE.MeshStandardMaterial({ color:0xffffff })); stripes.position.y=.05;
-      base.castShadow=bar1.castShadow=stripes.castShadow=true; bar.add(base,bar1,stripes); bar.userData.kind='barrier'; return bar; }
-    function mkCone(){ const c=new THREE.Mesh(new THREE.ConeGeometry(.5,.8,24), new THREE.MeshStandardMaterial({ color:0xff7a7a, roughness:.6 }));
-      const rim=new THREE.Mesh(new THREE.TorusGeometry(.36,.07,10,24), new THREE.MeshStandardMaterial({ color:0xffffff, roughness:.4 }));
-      rim.rotation.x=Math.PI/2; rim.position.y=.02; c.add(rim); c.castShadow=rim.castShadow=true; c.userData.kind='cone'; return c; }
-    function mkBarrel(){ const g=new THREE.CylinderGeometry(.35,.35,.8,18,1,true);
-      const m=new THREE.MeshStandardMaterial({ color:0x7d4d2a, metalness:.2, roughness:.6 });
-      const b=new THREE.Mesh(g,m); const band=new THREE.Mesh(new THREE.TorusGeometry(.37,.04,12,32), new THREE.MeshStandardMaterial({ color:0x333 }));
-      band.rotation.x=Math.PI/2; band.position.y=0; b.add(band); b.castShadow=band.castShadow=true; b.userData.kind='barrel'; return b; }
-    function mkLowGate(){ const g=new THREE.Group();
-      const h=new THREE.Mesh(new THREE.BoxGeometry(1.1,.24,.5), new THREE.MeshStandardMaterial({ color:0x7ad6ff, emissive:0x7ad6ff, emissiveIntensity:.25 }));
-      h.position.y=.95; const leg1=new THREE.Mesh(new THREE.BoxGeometry(.08,.9,.5), new THREE.MeshStandardMaterial({ color:0x3b6cff }));
-      const leg2=leg1.clone(); leg1.position.set(-.5,.45,0); leg2.position.set(.5,.45,0); g.add(h,leg1,leg2); g.userData.kind='gate'; return g; }
-    function mkCrumb(){ const m=new THREE.Mesh(new THREE.SphereGeometry(.075,12,10), new THREE.MeshStandardMaterial({ color:0x4b2e1f, metalness:.1, roughness:.6 })); m.userData.kind='crumb'; return m; }
-    function mkBonus(kind){ const col=kind==='discount'?0x2b7bd4:(kind==='prepack'?0x00d6ff:0x8a5bff);
-      const t=new THREE.Mesh(new THREE.TorusGeometry(.26,.07,16,24), new THREE.MeshStandardMaterial({ color:col, emissive:col, emissiveIntensity:1.2 }));
-      t.userData.kind=kind; return t; }
-
-    // spawners
-    function spawnObstacle(){ const lane=Math.floor(Math.random()*laneCount); const x=laneX()[lane];
-      const r=Math.random(); let mesh;
-      if(r<0.28){ mesh=mkBarrier(); mesh.position.set(x,.3,-80); }
-      else if(r<0.52){ mesh=mkCone(); mesh.position.set(x,.4,-80); }
-      else if(r<0.78){ mesh=mkBarrel(); mesh.position.set(x,.4,-80); }
-      else { mesh=mkLowGate(); mesh.position.set(x,.0,-80); }
-      scene.add(mesh); obstacles.push(mesh);
-    }
-    function spawnCrumbsRow(){ const baseZ=-75; const lane=Math.floor(Math.random()*laneCount); const x=laneX()[lane];
-      for(let i=0;i<3;i++){ const c=mkCrumb(); c.position.set(x, .9+i*0.22, baseZ - i*1.2); scene.add(c); crumbs.push(c); } }
-    function spawnBonus(){ const kinds=['discount','prepack','erid']; const kind=kinds[Math.floor(Math.random()*kinds.length)];
-      const b=mkBonus(kind); const lane=Math.floor(Math.random()*laneCount); const x=laneX()[lane]; b.position.set(x,1.0,-78); scene.add(b); bonuses.push(b); }
-
-    // player state
-    let velY=0, onGround=true, sliding=false, slideT=0;
-    let score=0, combo=0; const best=Number(localStorage.getItem('best')||'0'); document.getElementById('best').textContent='Рекорд: '+best;
+    targetX = laneX()[laneIdx];
 
     // input
-    let jumpPressed=false, slideHeld=false;
-    function setLane(delta){ laneIdx=clamp(laneIdx+delta,0,laneCount-1); targetX=laneX()[laneIdx]; }
-    window.addEventListener('keydown',e=>{
-      if(e.key==='ArrowLeft'||e.key==='a') setLane(-1);
-      if(e.key==='ArrowRight'||e.key==='d') setLane(+1);
-      if(e.key==='ArrowUp'||e.key===' ') jumpPressed=true;
-      if(e.key==='ArrowDown'||e.key==='Shift'||e.key==='Control') slideHeld=true;
-    });
-    window.addEventListener('keyup',e=>{ if(e.key==='ArrowDown'||e.key==='Shift'||e.key==='Control') slideHeld=false; });
-    const ev=(el,down)=>el.addEventListener('pointerdown',e=>{ e.preventDefault(); down();});
-    ev(document.getElementById('zoneLeft'), ()=>setLane(-1));
-    ev(document.getElementById('zoneRight'), ()=>{ jumpPressed=true; slideHeld=true; setTimeout(()=>slideHeld=false,350);} );
-    ev(document.getElementById('btnLeft'), ()=>setLane(-1));
-    ev(document.getElementById('btnRight'), ()=>setLane(+1));
-    ev(document.getElementById('btnJump'), ()=>{ jumpPressed=true; });
-    ev(document.getElementById('btnSlide'), ()=>{ slideHeld=true; setTimeout(()=>slideHeld=false,450);} );
+    addEventListener('keydown',e=>{ if(e.key==='ArrowLeft'||e.key==='a') setLane(-1); if(e.key==='ArrowRight'||e.key==='d') setLane(+1); if(e.key==='ArrowUp'||e.key===' ') window._jumpPressed=true; if(e.key==='ArrowDown'||e.key==='Shift'||e.key==='Control') window._slideHeld=true; });
+    addEventListener('keyup',e=>{ if(e.key==='ArrowDown'||e.key==='Shift'||e.key==='Control') window._slideHeld=false; });
 
-    // difficulty + start
-    let speed=11, spawnTimer=0, crumbTimer=0, bonusTimer=0;
-    function setDifficulty(m){ if(m==='easy'){ speed=9.5; laneCount=3; } if(m==='mid'){ speed=12; laneCount=3; } if(m==='hard'){ speed=14.5; laneCount=5; }
-      document.getElementById('level').textContent='Уровень: '+(m==='easy'?'Лёгко':m==='mid'?'Средне':'Сложно'); laneIdx=Math.min(laneIdx,laneCount-1); targetX=laneX()[laneIdx]; }
-    let started=false, paused=false;
-    function start(mode){ if(started) return; setDifficulty(mode); document.getElementById('start').style.display='none'; started=true; paused=false; }
-
-    document.getElementById('startEasy').addEventListener('click',()=>start('easy'));
-    document.getElementById('startMid').addEventListener('click',()=>start('mid'));
-    document.getElementById('startHard').addEventListener('click',()=>start('hard'));
-    document.getElementById('restart').addEventListener('click',()=> reset(true));
-
-    // postprocessing
-    const composer=new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene,camera));
-    const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.9,0.9,0.0);
-    const smaa=new SMAAPass(innerWidth*renderer.getPixelRatio(), innerHeight*renderer.getPixelRatio());
-    composer.addPass(bloom); composer.addPass(smaa);
-    let resScale=1.0; function setScale(s){ resScale=clamp(s,0.6,1.0); const w=Math.floor(innerWidth*resScale), h=Math.floor(innerHeight*resScale); renderer.setSize(w,h,false); composer.setSize(w,h); }
-    addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); setScale(resScale); });
-
-    // HUD
-    const toastEl=document.getElementById('toast'); let toastT=0;
-    function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); toastT=performance.now(); }
-    function setScore() { document.getElementById('score').textContent='Очки (крошки): '+score+(combo>1?` (комбо x${1+Math.floor(combo/3)})`:'' ); }
-
-    // runtime
-    let time=0,last=performance.now(), shieldT=0, shakeT=0;
-    function reset(keepUI=false){
-      for(const arr of [obstacles,crumbs,bonuses]){ while(arr.length){ const o=arr.pop(); scene.remove(o); o.geometry?.dispose?.(); o.material?.dispose?.(); } }
-      score=0; combo=0; setScore();
-      player.position.set(0,.68,0); laneIdx=1; targetX=laneX()[laneIdx]; velY=0; onGround=true; sliding=false; slideT=0;
-      spawnTimer=crumbTimer=bonusTimer=0; shieldT=0; shakeT=0;
-      if(!keepUI) document.getElementById('start').style.display=''; started=false; paused=false;
-    }
-    reset(true);
-
-    function aabb(a,b,ra=new THREE.Vector3(.5,.5,.5), rb=new THREE.Vector3(.5,.5,.5)){
-      const pa=a.getWorldPosition(new THREE.Vector3()), pb=b.getWorldPosition(new THREE.Vector3());
-      return Math.abs(pa.x-pb.x)<(ra.x+rb.x) && Math.abs(pa.y-pb.y)<(ra.y+rb.y) && Math.abs(pa.z-pb.z)<(ra.z+rb.z);
-    }
-
-    function loop(){
-      const now=performance.now(); const dt=(now-last)/1000; last=now; time+=dt;
-      // adaptive quality
-      const ms=dt*1000; if(ms>20 && resScale>0.6) setScale(resScale-0.06); else if(ms<14 && resScale<1.0) setScale(resScale+0.02);
-
-      // anim lines & sky
-      laneLines.forEach(l=>{ l.position.z = -70 - (time*10 % 160); });
-      skyMesh.rotation.y = 0.02*Math.sin(time*0.05);
-
-      if(started && !paused){
-        const targetSpeed = clamp(11 + time*0.25, 11, 16); speed = THREE.MathUtils.lerp(speed, targetSpeed, 0.02);
-        // player lane + camera
-        player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 12*dt);
-        camera.position.x = THREE.MathUtils.lerp(camera.position.x, player.position.x*0.1 + (shakeT>0?(Math.random()*0.12-0.06):0), 0.25);
-        camera.rotation.z = (Math.sin(time*2)*0.01);
-
-        // gravity & jump
-        const G=15;
-        if(jumpPressed && onGround){ velY=6.9; onGround=false; }
-        jumpPressed=false;
-        velY -= G*dt; player.position.y += velY*dt;
-        if(player.position.y<=.68){ player.position.y=.68; velY=0; onGround=true; }
-
-        // slide
-        if(slideHeld && onGround && !sliding){ sliding=true; slideT=0.55; }
-        if(sliding){ slideT -= dt; if(slideT<=0) sliding=false; }
-
-        // move world
-        const move=speed*dt;
-        for(const o of obstacles){ o.position.z += move; }
-        for(const c of crumbs){ c.position.z += move; }
-        for(const b of bonuses){ b.position.z += move; }
-        scenery.position.z += move*0.3; if(scenery.position.z > -40) scenery.position.z = -320;
-
-        // spawn
-        spawnTimer -= dt; if(spawnTimer<=0){ spawnObstacle(); spawnTimer = rand(0.75,1.35); }
-        crumbTimer -= dt; if(crumbTimer<=0){ spawnCrumbsRow(); crumbTimer = rand(0.8,1.1); }
-        bonusTimer -= dt; if(bonusTimer<=0){ spawnBonus(); bonusTimer = rand(5.5,9); }
-
-        // cleanup
-        const killZ=8;
-        for(const arr of [obstacles,crumbs,bonuses]) for(let i=arr.length-1;i>=0;i--) if(arr[i].position.z>killZ){ const o=arr[i]; arr.splice(i,1); scene.remove(o); }
-
-        // collisions
-        for(let i=crumbs.length-1;i>=0;i--){ const c=crumbs[i];
-          if(aabb(player,c,new THREE.Vector3(.45,sliding?.35:.55,.2), new THREE.Vector3(.18,.18,.18))){
-            combo=Math.min(combo+1,10); const add=1+Math.floor(combo/3); score+=add; setScore(); scene.remove(c); crumbs.splice(i,1);
-            if(navigator.vibrate) navigator.vibrate(12);
-          } }
-        for(let i=bonuses.length-1;i>=0;i--){ const b=bonuses[i]; const kind=b.userData.kind;
-          if(aabb(player,b,new THREE.Vector3(.45,.55,.2), new THREE.Vector3(.38,.38,.38))){
-            if(kind==='discount'){ score+=5; speed*=1.06; setTimeout(()=>speed/=1.06,2200); toast('+5 очков • Допскидка'); }
-            if(kind==='prepack'){ shieldT=6.5; toast('Щит активен (Препак)'); }
-            if(kind==='erid'){ score+=10; toast('+10 очков • Без ERID 🎉'); }
-            setScore(); scene.remove(b); bonuses.splice(i,1);
-          } }
-        for(let i=obstacles.length-1;i>=0;i--){ const o=obstacles[i];
-          const obb = (o.userData.kind==='gate')? new THREE.Vector3(.6,.5,.3) : new THREE.Vector3(.6,.6,.3);
-          if(aabb(player,o,new THREE.Vector3(.45,sliding?.35:.55,.2), obb)){
-            if(shieldT>0){ shieldT=0; toast('Щит поглотил урон'); scene.remove(o); obstacles.splice(i,1); shakeT=0.3; }
-            else {
-              const best=Number(localStorage.getItem('best')||'0'); if(score>best) localStorage.setItem('best',String(score));
-              toast('Столкновение! Рестарт…'); shakeT=0.5; setTimeout(()=>reset(false),900); return;
-            }
-          }
-        }
-
-        if(shieldT>0) shieldT-=dt;
-        if(shakeT>0) shakeT-=dt;
-        combo=Math.max(0, combo-dt*1.2);
-
-        // random FMCG toasts
-        if(Math.random()<0.003){
-          const lines=['Логистика отменила отгрузку 😵‍💫','Сеть запросила фотоотчёт срочно 📸','ERP подвис — бежим дальше','OOS! Ищем альтернативу','Препак согласован без ERID 🎉'];
-          toast(lines[Math.floor(Math.random()*lines.length)]);
-        }
-      }
-
-      if(toastT && now-toastT>1700){ toastEl.classList.remove('show'); toastT=0; }
-      composer.render();
-      requestAnimationFrame(loop);
-    }
-    setScale(1.0);
+    // start loop
     requestAnimationFrame(loop);
+  }
 
-    document.getElementById('pause').addEventListener('click',()=>{ paused=!paused; toast(paused?'Пауза':'Продолжаем'); });
-    document.getElementById('help').addEventListener('click',()=> toast('Собирай крошки, избегай препятствий. Свайпы/кнопки: ←/→, ↑ (прыжок), ↓ (слайд).'));
+  function setLane(d){ laneIdx=clamp(laneIdx+d,0,laneCount-1); targetX=laneX()[laneIdx]; }
+  function setDifficulty(m){ if(m==='easy'){ speed=9.5; laneCount=3;} if(m==='mid'){ speed=12; laneCount=3;} if(m==='hard'){ speed=14.5; laneCount=5;} document.getElementById('level').textContent='Уровень: '+(m==='easy'?'Лёгко':m==='mid'?'Средне':'Сложно'); laneIdx=Math.min(laneIdx,laneCount-1); targetX=laneX()[laneIdx]; }
 
+  function start(mode){ setDifficulty(mode); document.getElementById('start').style.display='none'; started=true; window._paused=false; }
+  function reset(keepUI){ while(obstacles.length){ const o=obstacles.pop(); scene.remove(o);} while(crumbs.length){ const o=crumbs.pop(); scene.remove(o);} while(bonuses.length){ const o=bonuses.pop(); scene.remove(o);} score=0; combo=0; setScore(); player.position.set(0,.68,0); laneIdx=1; targetX=laneX()[laneIdx]; velY=0; onGround=true; sliding=false; slideT=0; spawnTimer=crumbTimer=bonusTimer=0; shieldT=0; shakeT=0; if(!keepUI){ document.getElementById('start').style.display=''; started=false; window._paused=false; } }
+
+  function mkBarrier(){ const bar=new THREE.Group(); const base=new THREE.Mesh(new THREE.BoxGeometry(1.2,.4,.3), new THREE.MeshStandardMaterial({ color:0x3a3a4a }));
+    const bar1=new THREE.Mesh(new THREE.BoxGeometry(1.2,.18,.18), new THREE.MeshStandardMaterial({ color:0xff8c63 })); bar1.position.y=.25; const stripes=new THREE.Mesh(new THREE.BoxGeometry(1.2,.08,.19), new THREE.MeshStandardMaterial({ color:0xffffff })); stripes.position.y=.05; bar.add(base,bar1,stripes); bar.userData.kind='barrier'; return bar; }
+  function mkCone(){ const c=new THREE.Mesh(new THREE.ConeGeometry(.5,.8,24), new THREE.MeshStandardMaterial({ color:0xff7a7a })); const rim=new THREE.Mesh(new THREE.TorusGeometry(.36,.07,10,24), new THREE.MeshStandardMaterial({ color:0xffffff })); rim.rotation.x=Math.PI/2; rim.position.y=.02; c.add(rim); c.userData.kind='cone'; return c; }
+  function mkBarrel(){ const b=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.8,18,1,true), new THREE.MeshStandardMaterial({ color:0x7d4d2a })); b.userData.kind='barrel'; return b; }
+  function mkLowGate(){ const g=new THREE.Group(); const h=new THREE.Mesh(new THREE.BoxGeometry(1.1,.24,.5), new THREE.MeshStandardMaterial({ color:0x7ad6ff })); h.position.y=.95; const leg=new THREE.Mesh(new THREE.BoxGeometry(.08,.9,.5), new THREE.MeshStandardMaterial({ color:0x3b6cff })); const leg2=leg.clone(); leg.position.set(-.5,.45,0); leg2.position.set(.5,.45,0); g.add(h,leg,leg2); g.userData.kind='gate'; return g; }
+  function mkCrumb(){ const m=new THREE.Mesh(new THREE.SphereGeometry(.075,12,10), new THREE.MeshStandardMaterial({ color:0x4b2e1f })); m.userData.kind='crumb'; return m; }
+  function mkBonus(kind){ const col=kind==='discount'?0x2b7bd4:(kind==='prepack'?0x00d6ff:0x8a5bff); const t=new THREE.Mesh(new THREE.TorusGeometry(.26,.07,16,24), new THREE.MeshStandardMaterial({ color:col })); t.userData.kind=kind; return t; }
+
+  function spawnObstacle(){ const lane=Math.floor(Math.random()*laneCount); const x=laneX()[lane]; const r=Math.random(); let mesh; if(r<0.28){ mesh=mkBarrier(); mesh.position.set(x,.3,-80);} else if(r<0.52){ mesh=mkCone(); mesh.position.set(x,.4,-80);} else if(r<0.78){ mesh=mkBarrel(); mesh.position.set(x,.4,-80);} else { mesh=mkLowGate(); mesh.position.set(x,.0,-80);} scene.add(mesh); obstacles.push(mesh); }
+  function spawnCrumbsRow(){ const baseZ=-75; const lane=Math.floor(Math.random()*laneCount); const x=laneX()[lane]; for(let i=0;i<3;i++){ const c=mkCrumb(); c.position.set(x,.9+i*0.22,baseZ-i*1.2); scene.add(c); crumbs.push(c);} }
+  function spawnBonus(){ const kinds=['discount','prepack','erid']; const kind=kinds[Math.floor(Math.random()*kinds.length)]; const b=mkBonus(kind); const lane=Math.floor(Math.random()*laneCount); const x=laneX()[lane]; b.position.set(x,1.0,-78); scene.add(b); bonuses.push(b); }
+
+  function aabb(a,b,ra=new THREE.Vector3(.5,.5,.5), rb=new THREE.Vector3(.5,.5,.5)){ const pa=a.getWorldPosition(new THREE.Vector3()), pb=b.getWorldPosition(new THREE.Vector3()); return Math.abs(pa.x-pb.x)<(ra.x+rb.x) && Math.abs(pa.y-pb.y)<(ra.y+rb.y) && Math.abs(pa.z-pb.z)<(ra.z+rb.z); }
+
+  let last=performance.now(), time=0;
+  function loop(){ const now=performance.now(); const dt=(now-last)/1000; last=now; time+=dt;
+    // anim
+    skyMesh.rotation.y = 0.02*Math.sin(time*0.05);
+    if(started && !window._paused){
+      const targetSpeed = clamp(11 + time*0.25, 11, 16); speed += (targetSpeed - speed)*0.02;
+      player.position.x += (targetX - player.position.x) * (12*dt);
+      camera.position.x += (player.position.x*0.1 - camera.position.x)*0.25;
+
+      if(window._jumpPressed && onGround){ velY=6.9; onGround=false; } window._jumpPressed=false;
+      velY -= 15*dt; player.position.y += velY*dt; if(player.position.y<=.68){ player.position.y=.68; velY=0; onGround=true; }
+      if(window._slideHeld && onGround && !sliding){ sliding=true; slideT=0.55; } if(sliding){ slideT-=dt; if(slideT<=0) sliding=false; }
+
+      const move=speed*dt;
+      for(const o of obstacles){ o.position.z += move; } for(const c of crumbs){ c.position.z += move; } for(const b of bonuses){ b.position.z += move; }
+      scenery.position.z += move*0.3; if(scenery.position.z>-40) scenery.position.z=-320;
+
+      spawnTimer -= dt; if(spawnTimer<=0){ spawnObstacle(); spawnTimer=rand(0.75,1.35); }
+      crumbTimer -= dt; if(crumbTimer<=0){ spawnCrumbsRow(); crumbTimer=rand(0.8,1.1); }
+      bonusTimer -= dt; if(bonusTimer<=0){ spawnBonus(); bonusTimer=rand(5.5,9); }
+
+      const killZ=8; for(const arr of [obstacles,crumbs,bonuses]) for(let i=arr.length-1;i>=0;i--) if(arr[i].position.z>killZ){ const o=arr[i]; arr.splice(i,1); scene.remove(o); }
+
+      for(let i=crumbs.length-1;i>=0;i--){ const c=crumbs[i]; if(aabb(player,c,new THREE.Vector3(.45,sliding?.35:.55,.2), new THREE.Vector3(.18,.18,.18))){ combo=Math.min(combo+1,10); const add=1+Math.floor(combo/3); score+=add; setScore(); scene.remove(c); crumbs.splice(i,1);} }
+      for(let i=bonuses.length-1;i>=0;i--){ const b=bonuses[i]; const kind=b.userData.kind; if(aabb(player,b,new THREE.Vector3(.45,.55,.2), new THREE.Vector3(.38,.38,.38))){ if(kind==='discount'){ score+=5; speed*=1.06; setTimeout(()=>speed/=1.06,2200); toast('+5 очков • Допскидка'); } if(kind==='prepack'){ shieldT=6.5; toast('Щит активен (Препак)'); } if(kind==='erid'){ score+=10; toast('+10 очков • Без ERID 🎉'); } setScore(); scene.remove(b); bonuses.splice(i,1);} }
+      for(let i=obstacles.length-1;i>=0;i--){ const o=obstacles[i]; const obb=(o.userData.kind==='gate')?new THREE.Vector3(.6,.5,.3):new THREE.Vector3(.6,.6,.3); if(aabb(player,o,new THREE.Vector3(.45,sliding?.35:.55,.2), obb)){ if(shieldT>0){ shieldT=0; toast('Щит поглотил урон'); scene.remove(o); obstacles.splice(i,1); } else { const best=Number(localStorage.getItem('best')||'0'); if(score>best) localStorage.setItem('best',String(score)); toast('Столкновение! Рестарт…'); setTimeout(()=>reset(false),900); return; } } }
+      if(shieldT>0) shieldT-=dt; combo=Math.max(0, combo-dt*1.2);
+    }
+    renderer.render(scene,camera);
+    requestAnimationFrame(loop);
+  }
+
+  addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); });
+
+  init();
   </script>
 </body>
 </html>
