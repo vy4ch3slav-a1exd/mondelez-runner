@@ -81,7 +81,7 @@
   <div class="softkeys">
     <button class="btn" id="softLeft">◀</button>
     <button class="btn" id="softRight">▶</button>
-    <button class="btn" id="softSlide">SLIDE</button>
+    <button class="btn" id="softSlide" style="display:none">SLIDE</button>
     <button class="btn" id="softJump">JUMP</button>
   </div>
   <div class="toasts" id="toasts"></div>
@@ -91,7 +91,7 @@
   </div>
   <div class="titleCard" id="titleCard">
      <div class="title">MONDELEZ RUNNER</div>
-     <div class="subtitle">КАМ мчится к закрытию года. Собирай «шоколадные крошки», используй <b>двойной прыжок</b> и <b>слайд</b>, избегай «ERP упал» и «нет стока». Пройди 3 уровня и закрой год на <b>120% KPI</b>.</div>
+     <div class="subtitle">КАМ мчится к закрытию года. Собирай «шоколадные крошки», используй <b>двойной прыжок</b>, избегай «ERP упал» и «нет стока». Пройди 3 уровня и закрой год на <b>120% KPI</b>.</div>
      <button class="startBtn" id="startBtn">START</button>
      <div class="credits" id="credits">Developed by: <span id="hackText"></span><span class="cursor"></span></div>
   </div>
@@ -196,9 +196,9 @@ const COLOR_SKY = ['#28253a', '#262a3b', '#26243a']; // per level
 
 // levels
 const LEVELS = [
-  { name:'Склад РЦ', sky:COLOR_SKY[0], length: 8000, speedMul:1.00 },
-  { name:'Магазин', sky:COLOR_SKY[1], length: 9000, speedMul:1.04 },
-  { name:'Переговорка', sky:COLOR_SKY[2], length: 9800, speedMul:1.08 }
+  { name:'Склад РЦ', sky:COLOR_SKY[0], length: 12000, speedMul:1.00 },
+  { name:'Магазин', sky:COLOR_SKY[1], length: 15000, speedMul:1.04 },
+  { name:'Переговорка', sky:COLOR_SKY[2], length: 18000, speedMul:1.08 }
 ];
 
 // state
@@ -210,7 +210,7 @@ let scrollX = 0;
 let distance = 0;
 let score = 0;
 let best = Number(localStorage.getItem('mdz_best')||0);
-bestEl.textContent = best;
+bestEl.textContent = Math.round(best);
 let combo = 1;
 let comboProg = 0; // 0..1
 let comboDecay = 0;
@@ -309,7 +309,7 @@ function spawnWave(){
     const pattern = (Math.random()*3)|0; // 0..2
     if(pattern===0){
       // low obstacle requires slide
-      obstacles.push({x:base, lane:pick(lanes), type:'low', h:LANE_W()*0.35});
+      obstacles.push({x:base, lane:pick(lanes), type:'wall', h:LANE_W()*0.7});
     }else if(pattern===1){
       // wall "ERP upal"
       obstacles.push({x:base, lane:pick(lanes), type:'wall', h:LANE_W()*0.9});
@@ -407,7 +407,7 @@ function doJump(){
     SFX.double();
   }
 }
-function doSlide(){
+function doSlide(){ return; /* slide disabled */ 
   if(player.onGround){
     player.sliding = true;
     player.slideUntil = performance.now() + SLIDE_TIME;
@@ -461,7 +461,7 @@ window.addEventListener('touchend', (e)=>{
 // soft keys
 softLeft.onclick = ()=> moveLane(-1);
 softRight.onclick = ()=> moveLane(+1);
-softSlide.onclick = ()=> doSlide(); softSlide.onpointerdown = ()=> doSlide();
+// slide disabled
 softJump.onclick = ()=> doJump();
 
 // buttons
@@ -482,22 +482,10 @@ function showOverlay(txt){
 }
 function hideOverlay(){ overlay.style.display='none'; }
 
-/* replaced by robust beginGame() */
-
-// --- robust START handlers (fallbacks across browsers/messengers) ---
-function beginGame(){
-  try { titleCard.style.display='none'; } catch(e){}
-  try { startCountdown(); if(!SFX.enabled){ try{ SFX.enable(); }catch(e){} } } catch(e){ console.error(e); showToast('Ошибка старта: '+e, 'bad'); }
-}
-// Attach to button if present
-if(startBtn){ startBtn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); beginGame(); }, {once:true}); }
-// Global fallbacks: any first user gesture starts the game
-window.addEventListener('keydown', (e)=>{
-  if(state==='TITLE' && (e.code==='Space' || e.code==='Enter' || e.code==='ArrowUp')){ e.preventDefault(); beginGame(); }
-}, {passive:false});
-document.addEventListener('pointerdown', ()=>{ if(state==='TITLE') beginGame(); }, {once:true, passive:true});
-document.addEventListener('touchstart', ()=>{ if(state==='TITLE') beginGame(); }, {once:true, passive:true});
-
+startBtn.onclick = ()=>{
+  titleCard.style.display = 'none';
+  startCountdown();
+};
 function startCountdown(){
   state='COUNTDOWN';
   countdown=3;
@@ -617,7 +605,7 @@ function update(now){
         showToast('Уровень пройден', 'ok');
         setTimeout(()=>{
           hideOverlay();
-          startCountdown(); if(!SFX.enabled){ try{ SFX.enable(); }catch(e){} }
+          startCountdown();
         }, 500);
       }
     }
@@ -657,7 +645,7 @@ function draw(){
   // draw obstacles
   for(const o of obstacles){
     const x = ROAD_X() + (o.lane+0.1)*LANE_W() + o.x - scrollX;
-    if(o.type==='low'){
+    if(o.type==='low'){ /* converted to wall */ o.type='wall';
       drawEntityRect(o.x, o.lane, o.h, '#f2c94c'); // коробки
       drawText('низко', x+LANE_W()*0.32, FLOOR_Y()-o.h-4*DPR, 12*DPR, '#fff', 'center');
     }else if(o.type==='wall'){
@@ -706,7 +694,7 @@ function gameWin(){
   state='GAME_END';
   SFX.win();
   // update best
-  if(score>best){ best=score; localStorage.setItem('mdz_best', String(best)); bestEl.textContent=best; }
+  if(score>best){ best=score; localStorage.setItem('mdz_best', String(best)); bestEl.textContent = Math.round(best); }
   // fireworks confetti
   const start = performance.now();
   const id = setInterval(()=>{
@@ -742,7 +730,7 @@ function restartGame(){
   overlay.style.display='none';
   titleCard.style.display='none';
   levelIdx=0; score=0; scoreEl.textContent=score;
-  startCountdown(); if(!SFX.enabled){ try{ SFX.enable(); }catch(e){} }
+  startCountdown();
 }
 
 // misc UX: initial overlay hidden, but ensure buttons work in TITLE
