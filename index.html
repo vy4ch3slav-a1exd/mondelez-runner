@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Mondelez Runner</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='24' fill='%230b0b12'/%3E%3Ccircle cx='64' cy='64' r='36' fill='%233b2f2f'/%3E%3Ccircle cx='64' cy='64' r='24' fill='%23fff'/%3E%3C/ svg%3E">
 <meta name="theme-color" content="#0b0b12">
 <style>
   html, body { margin:0; height:100%; background:#0b0b12; overflow:hidden; }
@@ -34,7 +33,7 @@
 <canvas id="game" aria-label="Mondelez Runner"></canvas>
 
 <!-- START BANNER -->
-<div class="banner" id="startBanner">
+<div class="banner" id="startBanner" aria-modal="true" role="dialog">
   <div class="card">
     <svg class="avatar" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-label="Hacker FMCG CEOs">
       <defs>
@@ -51,7 +50,7 @@
     <h1 class="start-title">Mondelez Runner</h1>
     <div class="devnames">Λlєксαndr Rødіonσv  •  Λlєxєy Blіnσv</div>
     <div class="mini">Собирай крошки, избегай OOS и «ERP упал». Двойной прыжок: второй тап — в воздухе.</div>
-    <div class="start-actions"><button class="btn" id="startBtn">START</button></div>
+    <div class="start-actions"><button class="btn" id="startBtn" aria-label="Start the game">START</button></div>
   </div>
 </div>
 
@@ -116,16 +115,16 @@
   addEventListener('resize', resize); resize();
 
   const PURPLE='#7a4bd4', BLUE='#2b7bd4';
-  const SKY=['#efe7ff','#e9f2ff','#fff9e9'];
+  const SKY=['#0f1220','#0f1424','#111527'];
   const THEME=['#d8c6ff','#cfe6ff','#ffe9c6'];
 
   let state='start';
   let levelIndex=0;
   const SPEED_UP = 1.04;
   const levels=[
-    { name:'Склад РЦ', seconds:30, speedBase:4.5*SPEED_UP, spawn:{cube:0.5, fall:0.3, wall:0.2}, bonus:{discount:0.5, prepack:0.3, erid:0.2} },
-    { name:'Магазин', seconds:35, speedBase:5.0*SPEED_UP, spawn:{cube:0.48, fall:0.34, wall:0.18}, bonus:{discount:0.48, prepack:0.34, erid:0.18} },
-    { name:'Переговорка', seconds:40, speedBase:5.4*SPEED_UP, spawn:{cube:0.46, fall:0.34, wall:0.20}, bonus:{discount:0.46, prepack:0.34, erid:0.20} }
+    { name:'Склад РЦ', seconds:24, speedBase:4.6*SPEED_UP, spawn:{cube:0.5, fall:0.3, wall:0.2}, bonus:{discount:0.5, prepack:0.3, erid:0.2} },
+    { name:'Магазин', seconds:28, speedBase:5.1*SPEED_UP, spawn:{cube:0.48, fall:0.34, wall:0.18}, bonus:{discount:0.48, prepack:0.34, erid:0.18} },
+    { name:'Переговорка', seconds:32, speedBase:5.5*SPEED_UP, spawn:{cube:0.46, fall:0.34, wall:0.20}, bonus:{discount:0.46, prepack:0.34, erid:0.20} }
   ];
   let timeLeft=levels[0].seconds, t=0, last=0, speed=levels[0].speedBase;
   let score=0, best=+localStorage.getItem('mdz_best_crumbs')||0;
@@ -147,14 +146,14 @@
     ui.level.textContent='Уровень: '+L.name;
   }
 
-  function toast(msg){ ui.toast.textContent=msg; ui.toast.classList.add('show'); setTimeout(()=>ui.toast.classList.remove('show'), 2200); }
+  function toast(msg){ ui.toast.textContent=msg; ui.toast.classList.add('show'); clearTimeout(window._toastT); window._toastT=setTimeout(()=>ui.toast.classList.remove('show'), 1800); }
   function rect(x,y,w,h,f){ ctx.fillStyle=f; ctx.fillRect(x,y,w,h); }
   function circle(x,y,r,f){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=f; ctx.fill(); }
   function rand(a,b){ return a + Math.random()*(b-a); }
   function randI(a,b){ return Math.floor(rand(a,b)); }
 
   function drawBG(){
-    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, SKY[levelIndex]); g.addColorStop(1,'#ffffff');
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, SKY[levelIndex]); g.addColorStop(1,'#17182a');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
     ctx.globalAlpha=.24;
     for (let i=0;i<3;i++){
@@ -162,23 +161,10 @@
       ctx.beginPath(); ctx.moveTo(0,base);
       for (let x=0;x<=W;x+=12){ const y=base - 24*Math.sin((x*.003)+(i*1.7)+t*.7); ctx.lineTo(x,y); }
       ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
-      ctx.fillStyle=THEME[levelIndex]; ctx.fill();
+      ctx.fillStyle=THEME[i]; ctx.fill();
     }
     ctx.globalAlpha=1;
-    rect(0,H*.82,W,H*.18,'#f7f2ff');
-    for (let x=0;x<W;x+=28){ ctx.fillStyle=(Math.floor((x+t*speed*2)/56)%2===0)?'#f1d7ff':'#e8ccff'; ctx.fillRect(x,H*.98,18,H*.02); }
-  }
-
-  function drawPlayer(){
-    circle(player.x, H*.8, player.r*.9, 'rgba(0,0,0,.08)');
-    circle(player.x-3, player.y+2, player.r, '#3b2f2f');
-    circle(player.x, player.y, player.r*.78, '#fff');
-    circle(player.x+2, player.y-2, player.r, '#4a3a3a');
-    ctx.fillStyle='#2d2222';
-    for (let i=0;i<12;i++){ const a=i/12*Math.PI*2; circle(player.x+Math.cos(a)*player.r*.6, player.y+Math.sin(a)*player.r*.6, 2, '#2d2222'); }
-    const blink=Math.sin(Date.now()*0.008)>-0.2; if (blink){ circle(player.x-6, player.y-4, 3, '#111'); circle(player.x+6, player.y-4, 3, '#111'); } else { rect(player.x-9,player.y-5,6,2,'#111'); rect(player.x+3,player.y-5,6,2,'#111'); }
-    ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(player.x, player.y+6, 7, .15*Math.PI, .85*Math.PI); ctx.stroke();
-    if (player.shield>0){ ctx.strokeStyle='#00d6ff'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(player.x, player.y, player.r+4, 0, Math.PI*2); ctx.stroke(); }
+    rect(0,H*.82,W,H*.18,'#f7f2ff22');
   }
 
   let spawnT=0, goodieT=0, crumbT=0;
@@ -208,9 +194,13 @@
     speed = levels[levelIndex].speedBase + Math.min(3, Math.floor(t/12));
     if (player.boost>0){ speed += 1.5; player.boost -= dt; }
 
-    player.vy += H*0.0015; player.y += player.vy;
+    player.vy += H*0.0015;
+    player.y += player.vy;
     const gy=H*.78;
-    if (player.y>gy){ player.y=gy; player.vy=0; if (!player.onGround){ player.onGround=true; player.jumps=0; } }
+    if (player.y>gy){
+      player.y=gy; player.vy=0;
+      if (!player.onGround){ player.onGround=true; player.jumps=0; }
+    }
 
     spawnT-=dt; if (spawnT<=0){ spawnObstacle(); spawnT=0.96*rand(1.2,1.8); }
     goodieT-=dt; if (goodieT<=0){ spawnGoodie(); goodieT=0.96*rand(1.0,1.6); }
@@ -251,18 +241,21 @@
 
   function circleRect(cx,cy,cr, rx,ry,rw,rh){ const nx=Math.max(rx,Math.min(cx,rx+rw)); const ny=Math.max(ry,Math.min(cy,ry+rh)); const dx=cx-nx, dy=cy-ny; return dx*dx + dy*dy < cr*cr; }
 
-  const particles=[], confetti=[];
   function spark(x,y,color){ for (let i=0;i<10;i++){ particles.push({x,y, vx:rand(-2,2), vy:rand(-3,-0.5), life:rand(0.4,0.9), color: color||'#00d6ff'}); } }
   function confettiBurst(n){ for (let i=0;i<n;i++){ confetti.push({x:rand(0,W), y:rand(-40,-10), vx:rand(-0.5,0.5), vy:rand(2,4), life:rand(1,2), color:(i%2?PURPLE:BLUE)}); } }
 
   function render(){
     drawBG();
-    for (const o of obstacles){ if (o.type==='cube'){ rect(o.x,o.y,o.w,o.h,'#ff4b6e'); label(o,'OOS'); }
+    for (const o of obstacles){
+      if (o.type==='cube'){ rect(o.x,o.y,o.w,o.h,'#ff4b6e'); label(o,'OOS'); }
       else if (o.type==='fall'){ rect(o.x,o.y,o.w,o.h,'#e8a36b'); for (let k=0;k<o.w;k+=6){ rect(o.x+k,o.y+2,3,o.h-4,'#d1844a'); } label(o,'Нет стока'); }
-      else { rect(o.x,o.y,o.w,o.h,'#ffb84b'); label(o,'ERP упал'); } }
-    for (const g of goodies){ if (g.type==='discount'){ rect(g.x-16,g.y-12,32,24,'#2b7bd4'); ctx.fillStyle='#fff'; ctx.font=`${Math.max(10, Math.floor(player.r*.6))}px sans-serif`; ctx.fillText('+3%', g.x-12, g.y+5); }
+      else { rect(o.x,o.y,o.w,o.h,'#ffb84b'); label(o,'ERP упал'); }
+    }
+    for (const g of goodies){
+      if (g.type==='discount'){ rect(g.x-16,g.y-12,32,24,'#2b7bd4'); ctx.fillStyle='#fff'; ctx.font=`${Math.max(10, Math.floor(player.r*.6))}px sans-serif`; ctx.fillText('+3%', g.x-12, g.y+5); }
       else if (g.type==='prepack'){ circle(g.x,g.y,Math.max(12, Math.floor(player.r*.7))+2,'#00d6ff'); circle(g.x,g.y,Math.max(12, Math.floor(player.r*.7))-4,'#bff2ff'); }
-      else { ctx.fillStyle='#7a4bd4'; star(g.x,g.y,Math.max(12, Math.floor(player.r*.7))+4, Math.max(12, Math.floor(player.r*.7))-2, 6); } }
+      else { ctx.fillStyle='#7a4bd4'; star(g.x,g.y,Math.max(12, Math.floor(player.r*.7))+4, Math.max(12, Math.floor(player.r*.7))-2, 6); }
+    }
     for (const c of crumbs){ circle(c.x, c.y, Math.max(6, Math.floor(player.r*0.35)), '#6d3b2a'); }
     for (let i=particles.length-1;i>=0;i--){ const p=particles[i]; ctx.globalAlpha=Math.max(0,p.life); rect(p.x,p.y,3,3,p.color||'#00d6ff'); ctx.globalAlpha=1; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=0.02; if (p.life<=0) particles.splice(i,1); }
     for (let i=confetti.length-1;i>=0;i--){ const c=confetti[i]; rect(c.x,c.y,4,8,c.color); c.x+=c.vx; c.y+=c.vy; c.vy+=0.02; c.life-=0.01; if (c.life<=0) confetti.splice(i,1); }
@@ -274,25 +267,30 @@
 
   function loop(ts){ const dt=Math.min(0.033, (ts-last)/1000 || 0); last=ts; if (state==='running') update(dt); render(); requestAnimationFrame(loop); } requestAnimationFrame(loop);
 
+  // Controls — double jump. IMPORTANT: no global click until game started.
   function handleJump(){
-    if (state==='start'){ startGame(); return; }
-    if (state==='over'){ document.getElementById('gameOverBanner').classList.add('hidden'); resetAll(); return; }
-    if (state==='victory'){ document.getElementById('victoryBanner').classList.add('hidden'); resetAll(); return; }
     if (state!=='running') return;
     if (player.onGround && player.jumps===0){ player.vy = -Math.max(12, H*0.024); player.onGround=false; player.jumps=1; return; }
     if (!player.onGround && player.jumps===1){ player.vy = -Math.max(12, H*0.024); player.jumps=2; }
   }
-  function startGame(){ document.getElementById('startBanner').classList.add('hidden'); resetAll(); }
-  document.getElementById('startBtn').addEventListener('click', startGame);
-  addEventListener('pointerdown', ()=>{ handleJump(); }, {passive:true});
-  addEventListener('click', ()=>{ handleJump(); }, true);
+  canvas.addEventListener('pointerdown', handleJump, {passive:true});
   addEventListener('keydown', e=>{ if (e.code==='Space' || e.code==='ArrowUp'){ e.preventDefault(); handleJump(); } if (e.code==='KeyP'){ togglePause(); } });
-  document.getElementById('pauseBtn').addEventListener('click', togglePause);
-  document.getElementById('restartBtn').addEventListener('click', ()=>{ document.getElementById('gameOverBanner').classList.add('hidden'); document.getElementById('victoryBanner').classList.add('hidden'); resetAll(); });
 
-  function togglePause(){ if (state==='running'){ state='paused'; document.getElementById('pauseBanner').classList.remove('hidden'); } else if (state==='paused'){ state='running'; document.getElementById('pauseBanner').classList.add('hidden'); } }
-  function gameOver(){ state='over'; const best = +localStorage.getItem('mdz_best_crumbs')||0; const newBest=Math.max(best, score); localStorage.setItem('mdz_best_crumbs', newBest); document.getElementById('overMsg').textContent=`Крошек собрано: ${score} • Рекорд: ${newBest}`; document.getElementById('gameOverBanner').classList.remove('hidden'); }
-  function win(){ state='victory'; const best = +localStorage.getItem('mdz_best_crumbs')||0; const newBest=Math.max(best, score); localStorage.setItem('mdz_best_crumbs', newBest); document.getElementById('victoryBanner').classList.remove('hidden'); }
+  ui.startBtn.addEventListener('click', ()=>{ startGame(); }, {passive:true});
+
+  function startGame(){ ui.start.classList.add('hidden'); resetAll(); }
+  ui.pauseBtn.addEventListener('click', togglePause);
+  ui.restartBtn.addEventListener('click', ()=>{ ui.over.classList.add('hidden'); ui.victory.classList.add('hidden'); resetAll(); });
+
+  function togglePause(){ if (state==='running'){ state='paused'; ui.pause.classList.remove('hidden'); } else if (state==='paused'){ state='running'; ui.pause.classList.add('hidden'); } }
+
+  function gameOver(){ state='over'; best=Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best); document.getElementById('overMsg').textContent=`Крошек собрано: ${score} • Рекорд: ${best}`; ui.over.classList.remove('hidden'); }
+  function win(){ state='victory'; best=Math.max(best, score); localStorage.setItem('mdz_best_crumbs', best); ui.victory.classList.remove('hidden'); typeCredits(`Developed by:\nΛlєксαndr Rødіonσv & Λlєxєy Blіnσv`); confettiBurst(80); }
+
+  function typeCredits(text){
+    ui.credits.textContent = ''; let i=0; (function tick(){ ui.credits.textContent = text.slice(0,i) + (i%2?'':'█'); i++; if (i<=text.length) setTimeout(tick,28); })();
+  }
+
 })();</script>
 </body>
 </html>
