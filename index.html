@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mondelez Runner — 3D v6 Ultra</title>
+<title>Mondelez Runner — 3D v7 UltraTouch</title>
 <meta name="theme-color" content="#ffeefb">
 <style>
   :root { --accent:#7b61ff; --ui:#2b225a; --bg:#fff4fb; --mint:#00e6a3; --blue:#2b7bd4; --rose:#ff6b8a; }
@@ -34,11 +34,21 @@
   .diff.easy{border-color:var(--mint)}.diff.mid{border-color:var(--blue)}.diff.hard{border-color:var(--rose)}
   .hidden{display:none}
   .count{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);color:#fff;font-weight:900;font-size:12vh;text-shadow:0 10px 50px rgba(0,0,0,.35);pointer-events:none}
-  .hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);color:#003226;background:#bff2e8;border:2px solid #0acaa0;
-        padding:6px 10px;border-radius:10px;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace}
-  .badge{position:absolute;right:12px;bottom:12px;color:#223;background:rgba(255,255,255,.75);padding:6px 10px;border-radius:10px;font:11px/1.2 ui-monospace,Menlo,Consolas,monospace}
+  .pill{position:absolute;left:50%;top:12px;transform:translateX(-50%);pointer-events:none;background:rgba(255,255,255,.9);color:#1d1d2e;padding:6px 12px;border-radius:999px;border:2px solid #c9b7ff;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace}
   .floating{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-weight:900;text-shadow:0 0 12px rgba(0,0,0,.4);opacity:0;transition:opacity .2s, transform .4s}
-  .pill{position:absolute;left:50%;top:14px;transform:translateX(-50%);pointer-events:none;background:rgba(255,255,255,.85);color:#1d1d2e;padding:6px 12px;border-radius:999px;border:2px solid #c9b7ff;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace}
+
+  /* On-screen controls */
+  .controls{position:fixed;inset:0;pointer-events:none}
+  .zone{position:absolute;top:0;bottom:0;width:50%;pointer-events:auto}
+  .zone.left{left:0}
+  .zone.right{right:0}
+  .softbtn{position:absolute;bottom:18px;right:16px;background:rgba(20,20,35,.65);color:#fff;border:2px solid rgba(255,255,255,.6);
+           padding:12px 14px;border-radius:14px;font-weight:900;pointer-events:auto;touch-action:manipulation;user-select:none}
+  .softrow{position:absolute;bottom:18px;left:16px;display:flex;gap:10px;pointer-events:auto}
+  .softkey{background:rgba(20,20,35,.65);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 14px;border-radius:14px;font-weight:900;touch-action:manipulation;user-select:none}
+  .softbtn:active,.softkey:active{transform:translateY(2px);opacity:.9}
+  .hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);color:#003226;background:#bff2e8;border:2px solid #0acaa0;
+        padding:6px 10px;border-radius:10px;font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;pointer-events:none}
 </style>
 </head>
 <body>
@@ -55,17 +65,15 @@
   </div>
   <div class="toast" id="toast">Текст</div>
   <div class="count hidden" id="count">3</div>
-  <div class="hint" id="hint">Свайп/← → — полосы • Тап/Space — прыжок • Свайп↓/S — слайд • 🎯 Двойной тап/Shift — выстрел</div>
-  <div class="badge">v6 ultra</div>
+  <div class="pill" id="pillTip">Управление: левая половина — свайпы по полосам; правая — прыжок/слайд; удержание — огонь</div>
   <div class="floating" id="floatTxt">+1</div>
-  <div class="pill" id="pillTip">Совет: барьер-низкий проходится слайдом</div>
 
   <div class="banner" id="startBanner">
     <div class="card">
-      <div style="font-size:46px;margin-bottom:6px;">🍪🎯🍭</div>
-      <div class="start-title">Mondelez Runner — 3D v6 Ultra</div>
+      <div style="font-size:46px;margin-bottom:6px;">🍪🎮🍭</div>
+      <div class="start-title">Mondelez Runner — 3D v7 UltraTouch</div>
       <div class="dev">Λlєксαndr Rødіonσv • Λlєxєy Blіnσv</div>
-      <div class="mini">3D-раннер на 3 полосы: прыжок/двойной прыжок, слайд, стрельба крошками. Объёмные препятствия (барьер, конус, бочка, низкая арка), подсветки, частицы, вибрация и бусты.</div>
+      <div class="mini">Оптимизированные сенсорные жесты: левая половина — полосы, правая — прыжок/слайд, удержание — автострельба. Плюс мягкие экранные кнопки.</div>
       <div class="start-actions">
         <button class="btnlg diff easy" id="startEasy">🥧 ЛЕГКО</button>
         <button class="btnlg diff mid"  id="startMid">🍫 СРЕДНЕ</button>
@@ -75,30 +83,27 @@
   </div>
 </div>
 
+<!-- On-screen controls layer -->
+<div class="controls" id="controls">
+  <div class="zone left" id="zoneLeft" aria-label="Полосы"></div>
+  <div class="zone right" id="zoneRight" aria-label="Прыжок/Слайд"></div>
+  <div class="softrow">
+    <div class="softkey" id="btnLeft">◀︎</div>
+    <div class="softkey" id="btnRight">▶︎</div>
+  </div>
+  <div class="softbtn" id="btnJump">JUMP</div>
+  <div class="softbtn" id="btnSlide" style="right:96px">SLIDE</div>
+  <div class="softbtn" id="btnShoot" style="right:176px">🎯</div>
+  <div class="hint" id="hint">Свайпы слева — полосы • Тап справа — прыжок • Свайп вниз справа — слайд • Удержание — огонь</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
 <script>
 (function(){
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
   const rand=(a,b)=>a+Math.random()*(b-a);
 
-  // ---- SFX (WebAudio, tiny beeps) ----
-  let audioCtx=null;
-  function sfx(type){
-    try{
-      audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
-      const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-      o.connect(g); g.connect(audioCtx.destination);
-      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime+0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.18);
-      o.type = (type==='hit'?'square':type==='coin'?'triangle':'sine');
-      o.frequency.value = (type==='coin'?880:(type==='hit'?160:320));
-      o.start(); o.stop(audioCtx.currentTime+0.2);
-    }catch(e){/* ignore */}
-  }
-  function vibr(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
-
-  // ---- RENDERER & CANVAS ----
+  // ---- RENDERER ----
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -117,14 +122,13 @@
   const rim  = new THREE.DirectionalLight(0xff9bd4, 0.9); rim.position.set(-6,3,-2);
   scene.add(hemi, sun, rim);
 
-  // Candy sky & ground
+  // Simple candy sky & ground
   function makeSkyGradient(top='#fff8ff', mid='#f0f7ff', bot='#fff0f4'){
     const c=document.createElement('canvas'); c.width=2; c.height=256; const g=c.getContext('2d');
     const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,top); grd.addColorStop(.55,mid); grd.addColorStop(1,bot);
     g.fillStyle=grd; g.fillRect(0,0,2,256); return new THREE.CanvasTexture(c);
   }
   const skyTex = makeSkyGradient(); const sky = new THREE.Mesh(new THREE.SphereGeometry(180, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side:THREE.BackSide })); scene.add(sky);
-
   function texGround(){ const c=document.createElement('canvas'); c.width=256; c.height=256; const g=c.getContext('2d');
     g.fillStyle='#ffe9d1'; g.fillRect(0,0,256,256);
     const colors=['#ffd1dc','#ffe8aa','#d7f1ff','#e9d4ff']; 
@@ -136,32 +140,7 @@
   const laneLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12,140), new THREE.MeshBasicMaterial({ color:0x3b6cff, transparent:true, opacity:.6 }));
   laneLine.rotation.x=-Math.PI/2; laneLine.position.z=-60; scene.add(laneLine);
 
-  // Cute scenery (lollipops & donuts)
-  function addCandySet(){
-    const group=new THREE.Group(); scene.add(group);
-    for(let i=0;i<18;i++){
-      const stick=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,1.2,12), new THREE.MeshStandardMaterial({ color:0xffffff }));
-      const head=new THREE.Mesh(new THREE.SphereGeometry(.42,20,16), new THREE.MeshStandardMaterial({ color: (i%3===0?0xff86b7:i%3===1?0x7ad6ff:0xffc07a), roughness:.6 }));
-      const t=new THREE.Group(); t.add(stick,head); stick.position.y=.6; head.position.y=1.3; t.position.set((Math.random()*2-1)*30,0,-60-Math.random()*160); group.add(t);
-      const d=new THREE.Mesh(new THREE.TorusGeometry(.9+Math.random()*.6,.22,16,32), new THREE.MeshStandardMaterial({ color:0xffc07a, roughness:.75 }));
-      d.position.set((Math.random()*2-1)*28,.8,-60-Math.random()*160); d.rotation.x=Math.PI/2; group.add(d);
-    }
-    return group;
-  }
-  const scenery = addCandySet();
-
-  // Labels
-  function label(text, color){
-    const can=document.createElement('canvas'); const s=256; can.width=can.height=s; const c=can.getContext('2d');
-    c.fillStyle='rgba(255,255,255,.98)'; round(c,16,180,s-32,56,14); c.fill();
-    c.strokeStyle=color; c.lineWidth=6; round(c,16,180,s-32,56,14); c.stroke();
-    c.fillStyle=color; c.font='bold 36px ui-sans-serif,system-ui'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,s/2,s-32-28+28);
-    const tex=new THREE.CanvasTexture(can); const spr=new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true }));
-    spr.scale.set(2.0,1.3,1); spr.userData.dispose=()=>tex.dispose(); return spr;
-  }
-  function round(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
-
-  // Oreo
+  // Oreo model
   function createOreo(){
     const g1=new THREE.CylinderGeometry(.52,.52,.2,64);
     const g2=new THREE.CylinderGeometry(.49,.49,.09,48);
@@ -179,12 +158,12 @@
   const halo=new THREE.Sprite(new THREE.SpriteMaterial({ map:haloTex, color:0x55ddff, transparent:true, opacity:0 })); halo.scale.set(2.2,2.2,1); player.add(halo); halo.position.set(0,0,.1);
 
   // Lanes
-  const laneX=[-1.6,0,1.6]; let laneIdx=1; let targetX=laneX[laneIdx];
+  const laneX=[-1.6,0,1.6]; let laneIdx=1, targetX=laneX[laneIdx];
 
-  // Arrays
+  // Entities
   const obstacles=[], goodies=[], crumbs=[], shots=[], particles=[];
 
-  // Models
+  // Obstacle models
   function mkBarrier(){ const bar=new THREE.Group();
     const base=new THREE.Mesh(new THREE.BoxGeometry(1.2,.4,.3), new THREE.MeshStandardMaterial({ color:0x3a3a4a }));
     const bar1=new THREE.Mesh(new THREE.BoxGeometry(1.2,.18,.18), new THREE.MeshStandardMaterial({ color:0xff8c63, emissive:0xff8c63, emissiveIntensity:.35 })); bar1.position.y=.25;
@@ -197,13 +176,22 @@
     const m=new THREE.MeshStandardMaterial({ color:0x7d4d2a, metalness:.2, roughness:.6 });
     const b=new THREE.Mesh(g,m); const band=new THREE.Mesh(new THREE.TorusGeometry(.37,.04,12,32), new THREE.MeshStandardMaterial({ color:0x333 }));
     band.rotation.x=Math.PI/2; band.position.y=0; b.add(band); b.castShadow=band.castShadow=true; b.userData.kind='barrel'; return b; }
-  function mkLowGate(){ // низкая арка для слайда
-    const g=new THREE.Group();
+  function mkLowGate(){ const g=new THREE.Group();
     const h=new THREE.Mesh(new THREE.BoxGeometry(1.1,.24,.5), new THREE.MeshStandardMaterial({ color:0x7ad6ff, emissive:0x7ad6ff, emissiveIntensity:.25 }));
     h.position.y=.95; const leg1=new THREE.Mesh(new THREE.BoxGeometry(.08,.9,.5), new THREE.MeshStandardMaterial({ color:0x3b6cff }));
-    const leg2=leg1.clone(); leg1.position.set(-.5,.45,0); leg2.position.set(.5,.45,0); g.add(h,leg1,leg2); g.userData.kind='gate'; return g;
-  }
+    const leg2=leg1.clone(); leg1.position.set(-.5,.45,0); leg2.position.set(.5,.45,0); g.add(h,leg1,leg2); g.userData.kind='gate'; return g; }
 
+  function label(text, color){
+    const can=document.createElement('canvas'); const s=256; can.width=can.height=s; const c=can.getContext('2d');
+    c.fillStyle='rgba(255,255,255,.98)'; round(c,16,180,s-32,56,14); c.fill();
+    c.strokeStyle=color; c.lineWidth=6; round(c,16,180,s-32,56,14); c.stroke();
+    c.fillStyle=color; c.font='bold 36px ui-sans-serif,system-ui'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(text,s/2,s-32-28+28);
+    const tex=new THREE.CanvasTexture(can); const spr=new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true }));
+    spr.scale.set(2.0,1.3,1); spr.userData.dispose=()=>tex.dispose(); return spr;
+  }
+  function round(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+  // Spawns
   function spawnObstacle(){
     const lane=Math.floor(Math.random()*3); const x=laneX[lane];
     const r=Math.random(); let mesh, lab;
@@ -211,10 +199,9 @@
     else if(r<0.52){ mesh=mkCone(); mesh.position.set(x,.4,-70); lab=label('OOS','#ff4b6e'); }
     else if(r<0.78){ mesh=mkBarrel(); mesh.position.set(x,.4,-70); mesh.userData.roll=true; lab=label('Нет стока','#e8a36b'); }
     else { mesh=mkLowGate(); mesh.position.set(x,.0,-70); lab=label('Низкий барьер','#7ad6ff'); }
-    mesh.castShadow=true; scene.add(mesh); lab.position.set(mesh.position.x, mesh.position.y+ (mesh.userData.kind==='gate'?1.2:.9), mesh.position.z); scene.add(lab);
+    mesh.castShadow=true; scene.add(mesh); lab.position.set(mesh.position.x, mesh.position.y+(mesh.userData.kind==='gate'?1.2:.9), mesh.position.z); scene.add(lab);
     mesh.userData.label=lab; obstacles.push(mesh);
   }
-
   function spawnGoodie(){
     const kind=Math.random()<.5?'discount':(Math.random()<.8?'prepack':'erid'); const lane=Math.floor(Math.random()*3); const x=laneX[lane];
     const col=kind==='discount'?0x2b7bd4:(kind==='prepack'?0x00d6ff:0x8a5bff);
@@ -233,20 +220,21 @@
   const DIFF={ easy:{speed:.22,spawn:1.0,bonus:.85}, mid:{speed:.28,spawn:.85,bonus:1.0}, hard:{speed:.36,spawn:.7,bonus:1.15} };
   let diff=DIFF.mid;
 
-  // State
-  let timeLeft=30, speed=diff.speed, t=0; let score=0, best=+localStorage.getItem('mdz_best_v6')||0;
+  // State & HUD
+  let timeLeft=30, speed=diff.speed, t=0; let score=0, best=+localStorage.getItem('mdz_best_v7')||0;
   const hud={level:qs('#levelLabel'),score:qs('#scoreLabel'),best:qs('#bestLabel'),status:qs('#statusLabel'),
-    toast:qs('#toast'),count:qs('#count'),start:qs('#startBanner'),hint:qs('#hint'),floatTxt:qs('#floatTxt'),pill:qs('#pillTip'),
+    toast:qs('#toast'),count:qs('#count'),start:qs('#startBanner'),floatTxt:qs('#floatTxt'),pill:qs('#pillTip'),
     startEasy:qs('#startEasy'),startMid:qs('#startMid'),startHard:qs('#startHard'),pauseBtn:qs('#pauseBtn'),restartBtn:qs('#restartBtn')};
+  const ui={ zoneL:qs('#zoneLeft'), zoneR:qs('#zoneRight'), btnLeft:qs('#btnLeft'), btnRight:qs('#btnRight'), btnJump:qs('#btnJump'), btnSlide:qs('#btnSlide'), btnShoot:qs('#btnShoot'), hint:qs('#hint') };
   function qs(s){return document.querySelector(s)}
   function showToast(s){ hud.toast.textContent=s; hud.toast.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>hud.toast.classList.remove('show'),2200); }
   function floatText(txt,color){ const el=hud.floatTxt; el.textContent=txt; el.style.color=color||'#fff'; el.style.opacity=1; el.style.transform='translate(-50%,-60%) scale(1)'; clearTimeout(floatText.t); setTimeout(()=>{ el.style.opacity=0; el.style.transform='translate(-50%,-85%) scale(1.1)'; },10); floatText.t=setTimeout(()=>{ el.style.opacity=0; },700); }
 
   // Physics
-  let vy=0, groundY=.68, jumps=0, onGround=true; let coyote=0, buffer=0; const COYOTE=.18, BUFFER=.18;
+  let vy=0, groundY=.68, jumps=0, onGround=true; let coyote=0, buffer=0; const COYOTE=.18, BUFFER=.18; const G=.0175;
   let sliding=false, slideT=0;
   function wantJump(){ buffer=BUFFER; doJump(); }
-  function doJump(){ if(sliding) return; if((onGround||coyote>0)&&jumps===0){ vy=.40; jumps=1; onGround=false; coyote=0; buffer=0; squash(player, .85); sfx('jump'); return; } if(!onGround&&jumps===1){ vy=.36; jumps=2; buffer=0; squash(player, .9); sfx('jump'); return; } }
+  function doJump(){ if(sliding) return; if((onGround||coyote>0)&&jumps===0){ vy=.40; jumps=1; onGround=false; coyote=0; buffer=0; squash(player, .85); return; } if(!onGround&&jumps===1){ vy=.36; jumps=2; buffer=0; squash(player, .9); return; } }
   function startSlide(){ if(sliding) return; sliding=true; slideT=.7; player.scale.y=.6; player.scale.x=1.15; }
   function endSlide(){ sliding=false; player.scale.set(1,1,1); }
 
@@ -255,11 +243,13 @@
   function moveRight(){ laneIdx=Math.min(2,laneIdx+1); targetX=laneX[laneIdx]; wiggleCamera(+.02); }
 
   // Shots
-  function shoot(){
-    const s=new THREE.Mesh(new THREE.SphereGeometry(.09,16,14), new THREE.MeshStandardMaterial({ color:0x5b3a29, emissive:0x2a1208, emissiveIntensity:.7 }));
+  function shoot(){ const s=new THREE.Mesh(new THREE.SphereGeometry(.09,16,14), new THREE.MeshStandardMaterial({ color:0x5b3a29, emissive:0x2a1208, emissiveIntensity:.7 }));
     s.position.set(player.position.x, player.position.y+.2, .2); s.userData.vz=-2.7; s.castShadow=true; shots.push(s); scene.add(s);
-    spawnBurst(player.position.x, player.position.y+.2, .2, 0x5b3a29); sfx('shoot');
+    spawnBurst(player.position.x, player.position.y+.2, .2, 0x5b3a29);
   }
+  let fireLoop=null;
+  function startFire(){ if(fireLoop) return; shoot(); fireLoop=setInterval(shoot, 180); }
+  function stopFire(){ if(fireLoop){ clearInterval(fireLoop); fireLoop=null; } }
 
   // Juicy helpers
   function squash(obj, k){ obj.scale.set(1.05, k, 1.05); setTimeout(()=>obj.scale.set(1,1,1), 120); }
@@ -269,7 +259,6 @@
   function spawnBurst(x,y,z, color){ const n=16; for(let i=0;i<n;i++){ const p=new THREE.Mesh(new THREE.SphereGeometry(.04, 8,6), new THREE.MeshBasicMaterial({ color })); p.position.set(x,y,z); p.userData={vx:rand(-.08,.08), vy:rand(.04,.12), vz:rand(-.08,.02), life:.6+Math.random()*.3}; particles.push(p); scene.add(p); } }
 
   // Timers & loop
-  const G=.0175;
   let spawnT=.35, goodieT=.9, crumbT=.3; let boostTimer=0, shieldTimer=0;
   let last=performance.now(), running=false, paused=false;
   function loop(){ const now=performance.now(); const dt=Math.min(.05,(now-last)/1000); last=now; if(running&&!paused) update(dt); renderer.render(scene,camera); requestAnimationFrame(loop) } loop();
@@ -297,43 +286,33 @@
       for(let i=arr.length-1;i>=0;i--){ const m=arr[i]; if(!m) continue; if(m.position.z>7 || (m.userData && m.userData.life<=0)){ disposeWithLabel(m); arr.splice(i,1); } }
     }
 
-    // Player to lane
     player.position.x += (targetX - player.position.x) * Math.min(1, dt*12);
 
-    // Jump/slide physics
     vy -= G*(1+(jumps===2?.2:0)); player.position.y += vy;
-    if(player.position.y<=groundY){ player.position.y=groundY; if(!onGround){ onGround=true; jumps=0; } }
-    else { if(onGround){ onGround=false; coyote=COYOTE; } }
+    if(player.position.y<=.68){ player.position.y=.68; if(!onGround){ onGround=true; jumps=0; } }
+    else { if(onGround){ onGround=false; coyote=.18; } }
     if(coyote>0) coyote-=dt; if(buffer>0){ buffer-=dt; if(onGround) doJump(); }
 
     if(sliding){ slideT-=dt; if(slideT<=0) endSlide(); }
 
-    // shots vs obstacles
     for(let si=shots.length-1; si>=0; si--){
       const s=shots[si]; for(let oi=obstacles.length-1; oi>=0; oi--){
         const o=obstacles[oi];
         if(Math.abs(s.position.z-o.position.z)<.6 && Math.abs(s.position.x-o.position.x)<.6){
           score+=2; hitFlash(o); spawnBurst(o.position.x, o.position.y+.2, o.position.z, 0xffc07a); disposeWithLabel(o); obstacles.splice(oi,1);
-          scene.remove(s); shots.splice(si,1); floatText('+2','#ffd86b'); sfx('hit'); break;
+          scene.remove(s); shots.splice(si,1); floatText('+2','#ffd86b'); break;
         }
       }
     }
 
-    // player vs world
     const p=player.position;
     for(let i=obstacles.length-1;i>=0;i--){
-      const o=obstacles[i]; const nearZ = Math.abs(o.position.z-p.z)<.55; const sameX = Math.abs(o.position.x-p.x)<.65;
+      const o=obstacles[i]; const nearZ=Math.abs(o.position.z-p.z)<.55; const sameX=Math.abs(o.position.x-p.x)<.65;
       if(nearZ && sameX){
         let collide=false;
-        if(o.userData.kind==='gate'){ // низкая арка: если не слайд — удар
-          collide = !sliding;
-        }else{
-          collide = Math.abs(o.position.y-p.y)<.5;
-        }
-        if(collide){
-          if(shieldTimer>0){ shieldTimer=0; spawnBurst(o.position.x,o.position.y+.2,o.position.z,0x88e6ff); disposeWithLabel(o); obstacles.splice(i,1); showToast('Щит спас!'); vibr(30); }
-          else { gameOver(); return; }
-        }
+        if(o.userData.kind==='gate'){ collide=!sliding; } else { collide=Math.abs(o.position.y-p.y)<.5; }
+        if(collide){ if(shieldTimer>0){ shieldTimer=0; spawnBurst(o.position.x,o.position.y+.2,o.position.z,0x88e6ff); disposeWithLabel(o); obstacles.splice(i,1); showToast('Щит спас!'); }
+          else { gameOver(); return; } }
       }
     }
     for(let i=goodies.length-1;i>=0;i--){
@@ -343,18 +322,13 @@
         if(type==='discount'){ boostTimer=2.8; floatText('BOOST','#7ad6ff'); showToast('Допскидка +3% 🚀'); }
         else if(type==='prepack'){ shieldTimer=4.0; halo.material.opacity=.95; floatText('ЩИТ','#88e6ff'); showToast('Препак — щит'); }
         else { floatText('OK','#d69bff'); showToast('Согласовано без ERID ✨'); }
-        spawnBurst(m.position.x,m.position.y,m.position.z, 0x7ad6ff); disposeWithLabel(m); goodies.splice(i,1); sfx('coin');
+        spawnBurst(m.position.x,m.position.y,m.position.z, 0x7ad6ff); disposeWithLabel(m); goodies.splice(i,1);
       }
     }
-    for(let i=crumbs.length-1;i>=0;i--){ const m=crumbs[i]; if(m.position.distanceTo(p)<.7){ score++; spawnBurst(m.position.x,m.position.y,m.position.z, 0x6d3b2a); scene.remove(m); crumbs.splice(i,1); floatText('+1','#fff'); sfx('coin'); } }
+    for(let i=crumbs.length-1;i>=0;i--){ const m=crumbs[i]; if(m.position.distanceTo(p)<.7){ score++; spawnBurst(m.position.x,m.position.y,m.position.z, 0x6d3b2a); scene.remove(m); crumbs.splice(i,1); floatText('+1','#fff'); } }
 
     if(shieldTimer>0){ halo.material.opacity=Math.min(.95,.5+Math.sin(t*8)*.35); } else { halo.material.opacity=Math.max(0,halo.material.opacity- dt*2); }
     speed = diff.speed * (boostTimer>0?1.6:1.0); if(boostTimer>0) boostTimer-=dt; if(shieldTimer>0) shieldTimer-=dt;
-
-    // camera shake
-    if(shakeT>0){ shakeT-=dt; camera.position.x = Math.sin(t*40)*shakeAmp; camera.position.y = 2 + Math.cos(t*30)*shakeAmp*0.3; } else { camera.position.x *= .9; camera.position.y += (2 - camera.position.y)*.1; camera.rotation.z *= .9; }
-
-    player.rotation.y = Math.sin(t*.9)*.08;
 
     hud.score.textContent='Очки (крошки): '+score;
     hud.best.textContent='Рекорд: '+Math.max(best,score);
@@ -368,16 +342,16 @@
   function start(chosen){
     diff=DIFF[chosen]||DIFF.mid;
     hud.start.classList.add('hidden');
-    hud.hint.style.display=isTouch?'block':'block';
+    ui.hint.style.display='block'; hud.pill.style.display='block';
     timeLeft=30; t=0; score=0; laneIdx=1; targetX=laneX[1];
     player.position.set(0,.68,0); vy=0; jumps=0; onGround=true; coyote=0; boostTimer=0; shieldTimer=0; endSlide();
     clearAll(); paused=false; running=false; let n=3; hud.count.textContent=n; hud.count.classList.remove('hidden');
     const tick=()=>{ n--; if(n>0){ hud.count.textContent=n; setTimeout(tick,600);} else { hud.count.classList.add('hidden'); running=true; } };
     setTimeout(tick,600);
   }
-  function gameOver(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_v6',best); showToast('Игра окончена'); vibr(80); setTimeout(()=>start('mid'),1200); }
+  function gameOver(){ running=false; best=Math.max(best,score); localStorage.setItem('mdz_best_v7',best); showToast('Игра окончена'); setTimeout(()=>start('mid'),1200); }
 
-  // Input
+  // --- INPUT: Keyboard (fallback) ---
   function onKey(e){
     if(e.code==='ArrowLeft'||e.code==='KeyA'){ moveLeft(); }
     else if(e.code==='ArrowRight'||e.code==='KeyD'){ moveRight(); }
@@ -389,21 +363,40 @@
   window.addEventListener('keydown', onKey);
   window.addEventListener('keyup', (e)=>{ if(e.code==='ArrowDown'||e.code==='KeyS') endSlide(); });
 
-  // Tap/double-tap + swipe lanes/slide
-  renderer.domElement.addEventListener('pointerdown', (e)=>{
-    // double tap -> shoot, single -> jump
-    const now=performance.now(); if(renderer.domElement._lastTap && now-renderer.domElement._lastTap<220){ shoot(); renderer.domElement._lastTap=0; }
-    else { wantJump(); renderer.domElement._lastTap=now; }
-  }, {passive:true});
-  let sx=0, sy=0, sw=false;
-  renderer.domElement.addEventListener('touchstart', e=>{ if(e.touches.length===1){ sw=true; sx=e.touches[0].clientX; sy=e.touches[0].clientY; } }, {passive:true});
-  renderer.domElement.addEventListener('touchmove', e=>{ if(!sw) return; const dx=e.touches[0].clientX-sx; const dy=e.touches[0].clientY-sy;
-    if(Math.abs(dx)>48 && Math.abs(dx)>Math.abs(dy)){ dx>0?moveRight():moveLeft(); sw=false; }
-    if(Math.abs(dy)>60 && Math.abs(dy)>Math.abs(dx)){ if(dy>0) startSlide(); else wantJump(); sw=false; }
-  }, {passive:true});
-  renderer.domElement.addEventListener('touchend', ()=>{ sw=false; }, {passive:true});
+  // --- INPUT: Dual-zone touch scheme ---
+  // Left zone: horizontal swipe = lanes
+  let L_startX=0, L_active=false;
+  ui.zoneL.addEventListener('touchstart', e=>{ if(e.touches.length===1){ L_active=true; L_startX=e.touches[0].clientX; } }, {passive:true});
+  ui.zoneL.addEventListener('touchmove', e=>{ if(!L_active) return; const dx=e.touches[0].clientX-L_startX; if(Math.abs(dx)>48){ dx>0?moveRight():moveLeft(); L_active=false; } }, {passive:true});
+  ui.zoneL.addEventListener('touchend', ()=>{ L_active=false; }, {passive:true});
 
-  // Buttons (reliable)
+  // Right zone: tap = jump, swipe down = slide, long press = auto-fire
+  let R_startX=0, R_startY=0, R_active=false, R_pressTimer=null;
+  function startPress(){ stopFire(); R_pressTimer=setTimeout(()=>startFire(), 260); }
+  function stopPress(){ if(R_pressTimer){ clearTimeout(R_pressTimer); R_pressTimer=null; } stopFire(); }
+  ui.zoneR.addEventListener('touchstart', e=>{
+    if(e.touches.length===1){ R_active=true; R_startX=e.touches[0].clientX; R_startY=e.touches[0].clientY; startPress(); }
+  }, {passive:true});
+  ui.zoneR.addEventListener('touchmove', e=>{
+    if(!R_active) return;
+    const dx=e.touches[0].clientX-R_startX; const dy=e.touches[0].clientY-R_startY;
+    if(Math.abs(dy)>60 && Math.abs(dy)>Math.abs(dx)){ if(dy>0){ endSlide(); startSlide(); stopPress(); R_active=false; } else { wantJump(); stopPress(); R_active=false; } }
+  }, {passive:true});
+  ui.zoneR.addEventListener('touchend', e=>{
+    if(!R_active) return;
+    stopPress();
+    // If short tap without swipe -> jump (or double-jump via buffer)
+    wantJump();
+    R_active=false;
+  }, {passive:true});
+
+  // On-screen soft keys
+  ui.btnLeft.addEventListener('click', moveLeft); ui.btnRight.addEventListener('click', moveRight);
+  ui.btnJump.addEventListener('click', wantJump);
+  ui.btnSlide.addEventListener('pointerdown', startSlide); ui.btnSlide.addEventListener('pointerup', endSlide); ui.btnSlide.addEventListener('touchend', endSlide, {passive:true});
+  ui.btnShoot.addEventListener('pointerdown', startFire); ui.btnShoot.addEventListener('pointerup', stopFire); ui.btnShoot.addEventListener('touchend', stopFire, {passive:true});
+
+  // Buttons (start/pause/restart)
   function bindStart(id, lvl){ const el=document.getElementById(id); ['click','pointerup','touchend'].forEach(ev=>el.addEventListener(ev, ()=>start(lvl), {passive:true})); }
   bindStart('startEasy','easy'); bindStart('startMid','mid'); bindStart('startHard','hard');
   ;['click','pointerup','touchend'].forEach(ev=>document.getElementById('pauseBtn').addEventListener(ev, ()=>{ paused=!paused; }, {passive:true}));
