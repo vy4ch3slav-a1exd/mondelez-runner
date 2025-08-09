@@ -36,6 +36,7 @@
   .centerOverlay{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;}
   .big{font-size: clamp(36px, 8vw, 80px); font-weight:900; text-shadow:0 6px 24px rgba(0,0,0,.5); letter-spacing:1px;}
   .hidden{display:none !important;}
+  .err{position:fixed; left:50%; transform:translateX(-50%); bottom:18px; padding:10px 14px; border-radius:12px; background:#3a1f2a; border:1px solid #ff6b7b; color:#ffd7df; font-weight:700;}
 </style>
 </head>
 <body>
@@ -69,452 +70,352 @@
   </div>
   <div class="titleCard" id="titleCard">
     <div class="title">MONDELEZ RUNNER 3D</div>
-    <div class="subtitle">Реальный WebGL раннер: 3 полосы, прыжок/двойной/слайд, препятствия и бонусы. Дойди до финала и закрой год на <b>120% KPI</b>.</div>
+    <div class="subtitle">Реальный WebGL раннер. Если <b>START</b> молчит — это не твой косяк, а блокировка CDN. Я починила: игра подгрузит движок из нескольких источников.</div>
     <button class="startBtn" id="startBtn">START</button>
     <div class="credits">Developed by: <span id="hackText"></span><span class="cursor"></span></div>
   </div>
+  <div id="err" class="err" style="display:none;"></div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/controls/OrbitControls.js'; // dev toggle if needed
-
-// ---------- DOM
-const canvas = document.getElementById('c');
-const scoreEl = document.getElementById('score');
-const bestEl = document.getElementById('best');
-const levelEl = document.getElementById('level');
-const btnMute = document.getElementById('btnMute');
-const btnPause = document.getElementById('btnPause');
-const btnRestart = document.getElementById('btnRestart');
-const overlay = document.getElementById('overlay');
-const overlayText = document.getElementById('overlayText');
-const titleCard = document.getElementById('titleCard');
-const startBtn = document.getElementById('startBtn');
-const toasts = document.getElementById('toasts');
-const combofill = document.getElementById('combofill');
-const combotxt = document.getElementById('combotxt');
-const levelTag = document.getElementById('levelTag');
-const softLeft = document.getElementById('softLeft');
-const softRight = document.getElementById('softRight');
-const softSlide = document.getElementById('softSlide');
-const softJump = document.getElementById('softJump');
-
+<script>
 // credits typing
 (function(){
   const el = document.getElementById('hackText');
   const text = "Λlєксαndr Rødіonσv • Λlєxєy Blіnσv";
   let i=0; (function tick(){ el.textContent=text.slice(0,i++); if(i<=text.length) setTimeout(tick, 60+Math.random()*60); })();
 })();
+</script>
 
-// ---------- audio
-const SFX = (()=>{
-  const ctx = new (window.AudioContext||window.webkitAudioContext||function(){return {}})();
-  let enabled=false;
-  function tone(freq=440, dur=0.08, type='sine', gain=0.04){
-    if(!ctx.createOscillator) return;
-    const t0 = ctx.currentTime;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(gain,t0); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
-    o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0+dur);
-  }
-  return {
-    enable(){enabled=true; try{ctx.resume()}catch(e){} },
-    disable(){enabled=false;},
-    get enabled(){return enabled},
-    jump(){ if(enabled) tone(650,.10,'square',.06); },
-    double(){ if(enabled) tone(820,.12,'square',.06); },
-    slide(){ if(enabled) tone(260,.14,'sawtooth',.06); },
-    coin(){ if(enabled) tone(1100,.06,'triangle',.06); },
-    bonus(){ if(enabled) tone(880,.18,'sine',.07); },
-    hit(){ if(enabled){ tone(140,.12,'sawtooth',.09); setTimeout(()=>tone(100,.16,'sawtooth',.08),60);} },
-    level(){ if(enabled) tone(520,.3,'square',.08); },
-    win(){ if(enabled){[640,720,840,980].forEach((f,i)=>setTimeout(()=>tone(f,.12,'triangle',.08), i*130));} }
-  };
-})();
+<script type="module">
+const errBox = document.getElementById('err');
+const candidates = [
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.module.min.js',
+  'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js',
+  'https://unpkg.com/three@0.160.1/build/three.module.js',
+  'https://esm.run/three@0.160.1'
+];
+const extras = [
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/examples/jsm/controls/OrbitControls.min.js',
+  'https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/controls/OrbitControls.js',
+  'https://unpkg.com/three@0.160.1/examples/jsm/controls/OrbitControls.js',
+];
 
-// ---------- three setup
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
-renderer.setSize(innerWidth, innerHeight);
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
-camera.position.set(0, 3.6, 6.8);
-camera.lookAt(0,1.6,0);
-
-// Lights
-const hemi = new THREE.HemisphereLight(0xbdd6ff, 0x1a1425, 1.0);
-scene.add(hemi);
-const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-dir.position.set(3,6,3);
-scene.add(dir);
-
-// Floor / lanes
-const laneW = 1.6;
-const geometryFloor = new THREE.PlaneGeometry(100, 20, 50, 10);
-const matFloor = new THREE.MeshStandardMaterial({color:0x2a2740, roughness:0.9, metalness:0.0});
-const floor = new THREE.Mesh(geometryFloor, matFloor);
-floor.rotation.x = -Math.PI/2;
-floor.position.z = -40;
-scene.add(floor);
-
-// Side candy props (simple)
-const deco = new THREE.Group();
-scene.add(deco);
-function addCandy(x,z,color){
-  const m = new THREE.MeshStandardMaterial({color});
-  const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.2,0.5, 4,12), m);
-  c.position.set(x,0.6,z);
-  deco.add(c);
-}
-for(let i=0;i<50;i++) addCandy(-2.8, -i*3 -5, 0x7b5cf1), addCandy(2.8, -i*3 -5, 0x8be1ff);
-
-// Player (cookie disc)
-const player = new THREE.Group();
-const cookieMat = new THREE.MeshStandardMaterial({color:0xd9a87d, roughness:0.8, metalness:0.1});
-const cookie = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), cookieMat);
-player.add(cookie);
-scene.add(player);
-player.position.set(0, 0.5, 0);
-let playerLane = 1; // 0..2 (x = -laneW, 0, +laneW)
-let targetLane = 1;
-
-let vy = 0;
-let onGround = true;
-let canDouble = false;
-let sliding = false;
-let slideUntil = 0;
-
-// shield aura
-const shield = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), new THREE.MeshBasicMaterial({color:0x7b5cf1, transparent:true, opacity:0.35}));
-shield.visible=false; player.add(shield);
-let shieldMs = 0;
-
-// Env sky color per level
-const levelSkies = [0x2a2740, 0x233043, 0x243042];
-
-// Obstacles & pickups
-const obstacles=[]; // {mesh,type}
-const pickups=[];   // {mesh,kind}
-let spawnZ = -10;
-const levelLengths = [250, 280, 300];
-let levelIdx=0;
-let distance = 0;
-let speed = 0.24;
-
-// HUD
-let score=0, best=Number(localStorage.getItem('mdz_best3d')||0);
-bestEl.textContent = best;
-let combo=1, comboProg=0, comboDecay=0;
-
-// States
-let state='TITLE'; // TITLE, COUNTDOWN, RUN, PAUSE, LEVEL_END, GAME_END
-let countdown=3;
-function showOverlay(txt){ overlayText.textContent=txt; overlay.style.display='flex'; }
-function hideOverlay(){ overlay.style.display='none'; }
-
-// Spawner
-function laneXFromIdx(i){ return (i-1)*laneW; }
-function makeBox(w,h,d,color){
-  const g = new THREE.BoxGeometry(w,h,d);
-  const m = new THREE.MeshStandardMaterial({color, roughness:0.8, metalness:0.1});
-  const mesh = new THREE.Mesh(g,m); mesh.castShadow=false; mesh.receiveShadow=false;
-  return mesh;
-}
-function spawnWave(){
-  const baseZ = spawnZ - (4 + Math.random()*4);
-  const chooseLane = ()=> (Math.random()*3|0);
-  if(Math.random()<0.5){
-    // coins line
-    const l = chooseLane();
-    for(let i=0;i<6;i++){
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshStandardMaterial({color:0x5a341c}));
-      mesh.position.set(laneXFromIdx(l), 0.6 + (i%2)*0.05, baseZ - i*0.9);
-      scene.add(mesh);
-      pickups.push({mesh, kind:'crumb'});
-    }
-    // bonus
-    const roll = Math.random();
-    if(roll<0.33){
-      const mesh = makeBox(0.3,0.3,0.3, 0x56f29c);
-      mesh.position.set(laneXFromIdx(l), 0.6, baseZ - 6);
-      scene.add(mesh); pickups.push({mesh, kind:'bonus3'});
-    }else if(roll<0.66){
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), new THREE.MeshStandardMaterial({color:0x7b5cf1, emissive:0x3a2a7a, emissiveIntensity:0.6}));
-      mesh.position.set(laneXFromIdx(l), 0.6, baseZ - 6);
-      scene.add(mesh); pickups.push({mesh, kind:'prepak'});
-    }else{
-      const mesh = makeBox(0.34,0.34,0.34, 0x8be1ff);
-      mesh.position.set(laneXFromIdx(l), 0.6, baseZ - 6);
-      scene.add(mesh); pickups.push({mesh, kind:'erid'});
-    }
-  }else{
-    const pattern = Math.random()*3|0;
-    if(pattern===0){
-      // low obstacle (slide)
-      const l = chooseLane();
-      const mesh = makeBox(0.9,0.5,0.8, 0xf2c94c);
-      mesh.position.set(laneXFromIdx(l), 0.25, baseZ);
-      scene.add(mesh); obstacles.push({mesh, type:'low'});
-    }else if(pattern===1){
-      // wall "ERP upal"
-      const l = chooseLane();
-      const mesh = makeBox(0.9,1.2,0.6, 0xff6b7b);
-      mesh.position.set(laneXFromIdx(l), 0.6, baseZ);
-      scene.add(mesh); obstacles.push({mesh, type:'wall'});
-    }else{
-      // cart (moving small bob)
-      const l = chooseLane();
-      const mesh = makeBox(0.9,0.9,0.9, 0x6bb0ff);
-      mesh.userData.phase = Math.random()*Math.PI;
-      mesh.position.set(laneXFromIdx(l), 0.45, baseZ);
-      scene.add(mesh); obstacles.push({mesh, type:'cart'});
+async function loadThree(){
+  let lastErr;
+  for(const url of candidates){
+    try{
+      const mod = await import(url);
+      // Try to import controls (optional)
+      let OrbitControls = null;
+      for(const u of extras){
+        try{ OrbitControls = (await import(u)).OrbitControls; break; }catch(e){}
+      }
+      return {THREE: mod, OrbitControls};
+    }catch(e){
+      lastErr = e;
     }
   }
-  spawnZ = baseZ - (4 + Math.random()*4);
+  throw lastErr || new Error('Не удалось загрузить three.js');
 }
 
-// Controls
-function moveLane(dir){ targetLane = Math.max(0, Math.min(2, targetLane + dir)); playerLane = targetLane; }
-function doJump(){
-  if(onGround){ vy = 0.2; onGround=false; canDouble=true; SFX.jump(); }
-  else if(canDouble){ vy = 0.18; canDouble=false; SFX.double(); }
+function showError(msg){
+  errBox.textContent = msg;
+  errBox.style.display = 'block';
 }
-function doSlide(){ if(onGround){ sliding = true; slideUntil = performance.now()+520; SFX.slide(); } }
-function endSlideIfNeeded(now){ if(sliding && now>slideUntil) sliding=false; }
-
-// Keyboard
-window.addEventListener('keydown', e=>{
-  if(state==='TITLE') return;
-  if(e.code==='ArrowLeft' || e.code==='KeyA') moveLane(-1);
-  else if(e.code==='ArrowRight' || e.code==='KeyD') moveLane(+1);
-  else if(e.code==='ArrowUp' || e.code==='Space') doJump();
-  else if(e.code==='ArrowDown' || e.code==='KeyS') doSlide();
-  else if(e.code==='KeyP') togglePause();
-  else if(e.code==='KeyR') restartGame();
+loadThree().then(({THREE, OrbitControls})=>{
+  // boot the game
+  gameMain(THREE, OrbitControls);
+}).catch((e)=>{
+  showError('Движок не загрузился. Скорее всего, в сети блокируются CDNs. Открой через HTTPS-ссылку (GitHub Pages) или VPN. Я добавила автоподмену CDN, но все провайдерами блокируются одновременно.');
+  console.error(e);
 });
 
-// Touch
-let touchStart=null;
-function touchStartHandler(e){
-  if(state==='TITLE') return;
-  if(!SFX.enabled){ SFX.enable(); btnMute.textContent='Звук: вкл'; }
-  const t = e.changedTouches[0];
-  touchStart = {x:t.clientX, y:t.clientY, t:performance.now()};
-}
-function touchEndHandler(e){
-  if(state==='TITLE') return;
-  const t = e.changedTouches[0];
-  if(!touchStart) return;
-  const dx = t.clientX - touchStart.x;
-  const dy = t.clientY - touchStart.y;
-  const adx = Math.abs(dx), ady = Math.abs(dy);
-  const SW = 24;
-  if(adx>ady && adx>SW){ moveLane(dx<0?-1:+1); }
-  else if(ady>adx && ady>SW){ if(dy<0) doJump(); else doSlide(); }
-  else{ doJump(); }
-  touchStart=null;
-}
-window.addEventListener('touchstart', touchStartHandler, {passive:true});
-window.addEventListener('touchend', touchEndHandler, {passive:true});
+function gameMain(THREE, OrbitControls){
+  // === The previous main from index_3d.html adapted to use passed THREE ===
+  const canvas = document.getElementById('c');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const levelEl = document.getElementById('level');
+  const btnMute = document.getElementById('btnMute');
+  const btnPause = document.getElementById('btnPause');
+  const btnRestart = document.getElementById('btnRestart');
+  const overlay = document.getElementById('overlay');
+  const overlayText = document.getElementById('overlayText');
+  const titleCard = document.getElementById('titleCard');
+  const startBtn = document.getElementById('startBtn');
+  const toasts = document.getElementById('toasts');
+  const combofill = document.getElementById('combofill');
+  const combotxt = document.getElementById('combotxt');
+  const levelTag = document.getElementById('levelTag');
+  const softLeft = document.getElementById('softLeft');
+  const softRight = document.getElementById('softRight');
+  const softSlide = document.getElementById('softSlide');
+  const softJump = document.getElementById('softJump');
 
-// Soft keys
-softLeft.onclick = ()=> moveLane(-1);
-softRight.onclick = ()=> moveLane(+1);
-softSlide.onclick = ()=> doSlide();
-softJump.onclick = ()=> doJump();
-
-// Buttons
-btnMute.onclick = ()=>{ if(SFX.enabled){ SFX.disable(); btnMute.textContent='Звук: выкл'; } else { SFX.enable(); btnMute.textContent='Звук: вкл'; SFX.coin(); } };
-btnPause.onclick = ()=> togglePause();
-btnRestart.onclick = ()=> restartGame();
-
-
-function beginFromTitle(e){
-  if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){} }
-  if(state!=='TITLE') return;
-  titleCard.style.display='none';
-  if(!SFX.enabled){ SFX.enable(); btnMute.textContent='Звук: вкл'; }
-  startCountdown();
-}
-startBtn.addEventListener('click', beginFromTitle, {passive:false});
-startBtn.addEventListener('pointerdown', beginFromTitle, {passive:false});
-startBtn.addEventListener('touchstart', beginFromTitle, {passive:false});
-window.addEventListener('keydown', (e)=>{
-  if(state==='TITLE' && (e.code==='Enter' || e.code==='Space')) beginFromTitle(e);
-});
-
-// Toasts
-function showToast(text, kind='info'){
-  const el = document.createElement('div'); el.className='toast';
-  if(kind==='ok') el.style.borderLeftColor='var(--ok)';
-  if(kind==='bad') el.style.borderLeftColor='var(--bad)';
-  el.textContent=text; toasts.appendChild(el);
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(6px)'; }, 1800);
-  setTimeout(()=> el.remove(), 2300);
-}
-
-// Countdown
-function startCountdown(){ state='COUNTDOWN'; countdown=3; nextTickCountdown(); }
-function nextTickCountdown(){
-  overlay.classList.remove('hidden'); overlay.style.display='flex'; overlayText.textContent = (countdown>0? String(countdown):''); 
-  if(countdown<=0){ overlay.style.display='none'; resetLevel(); state='RUN'; lastTime=performance.now(); return; }
-  countdown--; setTimeout(nextTickCountdown, 720);
-}
-
-// Reset level
-function resetLevel(){
-  // cleanup
-  for(const o of obstacles) scene.remove(o.mesh); obstacles.length=0;
-  for(const p of pickups) scene.remove(p.mesh); pickups.length=0;
-  spawnZ = -12;
-  distance = 0;
-  speed = 0.24 * (1 + levelIdx*0.04); // +4% per level
-  player.position.set(laneXFromIdx(1), 0.5, 0); playerLane=1; targetLane=1;
-  vy=0; onGround=true; canDouble=false; sliding=false; shieldMs=0; shield.visible=false;
-  scene.background = new THREE.Color(levelSkies[levelIdx]);
-  levelEl.textContent = (levelIdx+1);
-  levelTag.textContent = ['Склад РЦ','Магазин','Переговорка'][levelIdx];
-  SFX.level();
-}
-
-// Collisions AABB
-const tmpBoxA = new THREE.Box3(), tmpBoxB = new THREE.Box3();
-function collide(a,b){ tmpBoxA.setFromObject(a); tmpBoxB.setFromObject(b); return tmpBoxA.intersectsBox(tmpBoxB); }
-
-// Game loop
-let lastTime = performance.now();
-function frame(now){
-  requestAnimationFrame(frame);
-  const dt = Math.min(40, now - lastTime); lastTime = now;
-  if(state==='RUN'){
-    endSlideIfNeeded(now);
-    // forward movement (move world back)
-    distance += speed * dt;
-    scene.position.z = distance;
-    // spawn
-    if(-spawnZ + distance < 20) spawnWave();
-    // update moving obstacles
-    for(const o of obstacles){
-      if(o.type==='cart'){
-        const m = o.mesh;
-        m.userData.phase += dt*0.006;
-        m.position.y = 0.45 + Math.sin(m.userData.phase)*0.06;
-      }
+  // audio
+  const SFX = (()=>{
+    const ctx = new (window.AudioContext||window.webkitAudioContext||function(){return {}})();
+    let enabled=false;
+    function tone(freq=440, dur=0.08, type='sine', gain=0.04){
+      if(!ctx.createOscillator) return;
+      const t0 = ctx.currentTime;
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type=type; o.frequency.value=freq;
+      g.gain.setValueAtTime(gain,t0); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0+dur);
     }
-    // player vertical
-    vy += -0.0012 * dt; // gravity
-    player.position.y += vy * dt;
-    if(player.position.y<=0.5){ player.position.y=0.5; vy=0; onGround=true; sliding=false; canDouble=false; }
-    // lane x (snap)
-    player.position.x += (laneXFromIdx(playerLane) - player.position.x) * 0.25;
-    // camera follow
-    const targetCamZ = 6.6, targetCamY = 3.6;
-    camera.position.x += (player.position.x*0.25 - camera.position.x)*0.08;
-    camera.position.y += (targetCamY - camera.position.y)*0.08;
-    camera.position.z += (targetCamZ - camera.position.z)*0.08;
-    camera.lookAt(player.position.x, 1.5, player.position.z-2);
-    // pickups
-    for(let i=pickups.length-1;i>=0;i--){
-      const p = pickups[i];
-      if(collide(player, p.mesh)){
-        if(p.kind==='crumb'){
-          score += Math.floor(1*combo); SFX.coin(); combo = Math.min(8, combo+0.05); comboProg=Math.min(1, comboProg+0.18); comboDecay=1500;
-        }else if(p.kind==='bonus3'){
-          score += 5*Math.floor(combo); showToast('Допскидка +3%  •  +5','ok'); SFX.bonus();
-        }else if(p.kind==='prepak'){
-          shieldMs = 7000; shield.visible=true; showToast('Препак — ЩИТ 7s','ok'); SFX.bonus();
-        }else if(p.kind==='erid'){
-          score += 10*Math.floor(combo); showToast('Без ERID  •  +10','ok'); SFX.bonus();
-        }
-        scoreEl.textContent=score;
-        scene.remove(p.mesh); pickups.splice(i,1);
-      }else{
-        // cleanup far behind
-        if(p.mesh.position.z > (distance+10)) { scene.remove(p.mesh); pickups.splice(i,1); }
-      }
-    }
-    // shield timer
-    if(shieldMs>0){ shieldMs-=dt; if(shieldMs<=0){ shieldMs=0; shield.visible=false; } }
-    // obstacles collide
-    for(let i=0;i<obstacles.length;i++){
-      const o = obstacles[i];
-      if(collide(player, o.mesh)){
-        if(shieldMs>0){ shieldMs=0; shield.visible=false; showToast('Щит поглотил удар','ok'); SFX.hit(); scene.remove(o.mesh); obstacles.splice(i,1); break; }
-        else{
-          SFX.hit();
-          showToast('Столкновение — рестарт уровня', 'bad');
-          state='PAUSE'; showOverlay('☠');
-          setTimeout(()=>{ hideOverlay(); resetLevel(); state='RUN'; lastTime=performance.now(); }, 600);
-          combo=1; comboProg=0; comboDecay=0;
-          break;
-        }
-      }else{
-        if(o.mesh.position.z > (distance+10)){ scene.remove(o.mesh); obstacles.splice(i,1); i--; }
-      }
-    }
-    // combo decay
-    if(combo>1){ comboDecay-=dt; if(comboDecay<=0) combo = Math.max(1, combo - 0.02*dt/16); }
-    combofill.style.width = (((combo-1)/7)*100).toFixed(1)+'%';
-    combotxt.textContent = 'COMBO ×' + Math.max(1, Math.floor(combo));
-    // finish level
-    if(distance > levelLengths[levelIdx]){
-      levelIdx++;
-      if(levelIdx>=3){ // win
-        gameWin(); return;
-      }else{
-        state='LEVEL_END';
-        showToast('Уровень пройден','ok');
-        setTimeout(()=>{ startCountdown(); }, 400);
-      }
-    }
-  }
-  renderer.render(scene, camera);
-}
-requestAnimationFrame(frame);
-
-// Win
-function gameWin(){
-  state='GAME_END'; SFX.win();
-  if(score>best){ best=score; localStorage.setItem('mdz_best3d', String(best)); bestEl.textContent=best; }
-  overlay.style.display='flex';
-  const msg1='Год закрыт на 120% KPI';
-  const msg2='Developed by:\\nΛlєксαndr Rødіonσv & Λlєxєy Blіnσv █';
-  let j=0;
-  (function type(){ overlayText.style.whiteSpace='pre-line'; overlayText.innerHTML = `<div style="font-weight:800; font-size:48px; margin-bottom:12px; color:#7dffb7;">${msg1}</div>`+
-  `<div style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#8be1ff; font-size:18px;">${msg2.slice(0,j)}<span style="background:#8be1ff; display:inline-block; width:10px; height:1em; vertical-align:-2px; animation: blink 1s steps(1) infinite;"></span></div>`;
-    if(j<msg2.length){ j++; setTimeout(type, 40+Math.random()*60); }
+    return {
+      enable(){enabled=true; try{ctx.resume()}catch(e){} },
+      disable(){enabled=false;},
+      get enabled(){return enabled},
+      jump(){ if(enabled) tone(650,.10,'square',.06); },
+      double(){ if(enabled) tone(820,.12,'square',.06); },
+      slide(){ if(enabled) tone(260,.14,'sawtooth',.06); },
+      coin(){ if(enabled) tone(1100,.06,'triangle',.06); },
+      bonus(){ if(enabled) tone(880,.18,'sine',.07); },
+      hit(){ if(enabled){ tone(140,.12,'sawtooth',.09); setTimeout(()=>tone(100,.16,'sawtooth',.08),60);} },
+      level(){ if(enabled) tone(520,.3,'square',.08); },
+      win(){ if(enabled){[640,720,840,980].forEach((f,i)=>setTimeout(()=>tone(f,.12,'triangle',.08), i*130));} }
+    };
   })();
-  setTimeout(()=>{ showToast('Tap/Enter — заново','info'); window.addEventListener('keydown', restartOnce, {once:true}); window.addEventListener('touchstart', restartOnce, {once:true, passive:true}); }, 1200);
-  function restartOnce(){ restartGame(); }
-}
 
-function restartGame(){
-  overlay.style.display='none'; titleCard.style.display='none';
-  levelIdx=0; score=0; scoreEl.textContent=score; combo=1; comboProg=0; comboDecay=0;
-  startCountdown();
-}
-
-// Pause on tab hide
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden && state==='RUN') togglePause(); });
-
-// Initial best
-bestEl.textContent = best;
-
-// Resize
-window.addEventListener('resize', ()=>{
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
   renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
-});
 
-// Title state
-state='TITLE';
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
+  camera.position.set(0, 3.6, 6.8); camera.lookAt(0,1.6,0);
 
-console.log('Mondelez Runner 3D ready');
+  const hemi = new THREE.HemisphereLight(0xbdd6ff, 0x1a1425, 1.0); scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.8); dir.position.set(3,6,3); scene.add(dir);
+
+  const laneW = 1.6;
+  const geometryFloor = new THREE.PlaneGeometry(100, 20, 50, 10);
+  const matFloor = new THREE.MeshStandardMaterial({color:0x2a2740, roughness:0.9, metalness:0.0});
+  const floor = new THREE.Mesh(geometryFloor, matFloor); floor.rotation.x=-Math.PI/2; floor.position.z = -40; scene.add(floor);
+
+  const deco = new THREE.Group(); scene.add(deco);
+  function addCandy(x,z,color){
+    const m = new THREE.MeshStandardMaterial({color});
+    const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.2,0.5, 4,12), m);
+    c.position.set(x,0.6,z); deco.add(c);
+  }
+  for(let i=0;i<50;i++){ addCandy(-2.8, -i*3 -5, 0x7b5cf1); addCandy(2.8, -i*3 -5, 0x8be1ff); }
+
+  const player = new THREE.Group();
+  const cookieMat = new THREE.MeshStandardMaterial({color:0xd9a87d, roughness:0.8, metalness:0.1});
+  const cookie = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), cookieMat);
+  player.add(cookie); scene.add(player); player.position.set(0,0.5,0);
+  let playerLane=1, targetLane=1;
+  let vy=0, onGround=true, canDouble=false, sliding=false, slideUntil=0;
+
+  const shield = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12), new THREE.MeshBasicMaterial({color:0x7b5cf1, transparent:true, opacity:0.35}));
+  shield.visible=false; player.add(shield);
+  let shieldMs=0;
+
+  const levelSkies=[0x2a2740,0x233043,0x243042];
+  const obstacles=[], pickups=[];
+  let spawnZ=-10;
+  const levelLengths=[250,280,300];
+  let levelIdx=0, distance=0, speed=0.24;
+  let score=0, best=Number(localStorage.getItem('mdz_best3d')||0); bestEl.textContent=best;
+  let combo=1, comboProg=0, comboDecay=0;
+  let state='TITLE', countdown=3;
+  function showOverlay(txt){ overlayText.textContent=txt; overlay.style.display='flex'; }
+  function hideOverlay(){ overlay.style.display='none'; }
+  function showToast(text, kind='info'){
+    const el = document.createElement('div'); el.className='toast';
+    if(kind==='ok') el.style.borderLeftColor='var(--ok)';
+    if(kind==='bad') el.style.borderLeftColor='var(--bad)';
+    el.textContent=text; toasts.appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(6px)'; }, 1800);
+    setTimeout(()=> el.remove(), 2300);
+  }
+
+  function laneXFromIdx(i){ return (i-1)*laneW; }
+  function makeBox(w,h,d,color){
+    const g = new THREE.BoxGeometry(w,h,d);
+    const m = new THREE.MeshStandardMaterial({color, roughness:0.8, metalness:0.1});
+    const mesh = new THREE.Mesh(g,m); return mesh;
+  }
+  function spawnWave(){
+    const baseZ = spawnZ - (4 + Math.random()*4);
+    const chooseLane = ()=> (Math.random()*3|0);
+    if(Math.random()<0.5){
+      const l = chooseLane();
+      for(let i=0;i<6;i++){
+        const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshStandardMaterial({color:0x5a341c}));
+        mesh.position.set(laneXFromIdx(l), 0.6 + (i%2)*0.05, baseZ - i*0.9);
+        scene.add(mesh); pickups.push({mesh, kind:'crumb'});
+      }
+      const roll = Math.random();
+      if(roll<0.33){ const mesh = makeBox(0.3,0.3,0.3, 0x56f29c); mesh.position.set(laneXFromIdx(l), 0.6, baseZ - 6); scene.add(mesh); pickups.push({mesh, kind:'bonus3'}); }
+      else if(roll<0.66){ const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), new THREE.MeshStandardMaterial({color:0x7b5cf1, emissive:0x3a2a7a, emissiveIntensity:0.6})); mesh.position.set(laneXFromIdx(l), 0.6, baseZ - 6); scene.add(mesh); pickups.push({mesh, kind:'prepak'}); }
+      else { const mesh = makeBox(0.34,0.34,0.34, 0x8be1ff); mesh.position.set(laneXFromIdx(l), 0.6, baseZ - 6); scene.add(mesh); pickups.push({mesh, kind:'erid'}); }
+    }else{
+      const pattern = Math.random()*3|0;
+      if(pattern===0){ const l = chooseLane(); const mesh = makeBox(0.9,0.5,0.8, 0xf2c94c); mesh.position.set(laneXFromIdx(l), 0.25, baseZ); scene.add(mesh); obstacles.push({mesh, type:'low'}); }
+      else if(pattern===1){ const l = chooseLane(); const mesh = makeBox(0.9,1.2,0.6, 0xff6b7b); mesh.position.set(laneXFromIdx(l), 0.6, baseZ); scene.add(mesh); obstacles.push({mesh, type:'wall'}); }
+      else { const l = chooseLane(); const mesh = makeBox(0.9,0.9,0.9, 0x6bb0ff); mesh.userData.phase=Math.random()*Math.PI; mesh.position.set(laneXFromIdx(l), 0.45, baseZ); scene.add(mesh); obstacles.push({mesh, type:'cart'}); }
+    }
+    spawnZ = baseZ - (4 + Math.random()*4);
+  }
+
+  function moveLane(dir){ targetLane = Math.max(0, Math.min(2, targetLane + dir)); playerLane = targetLane; }
+  function doJump(){ if(onGround){ vy = 0.2; onGround=false; canDouble=true; } else if(canDouble){ vy = 0.18; canDouble=false; } }
+  function doSlide(){ if(onGround){ sliding=true; slideUntil = performance.now()+520; } }
+  function endSlideIfNeeded(now){ if(sliding && now>slideUntil) sliding=false; }
+
+  window.addEventListener('keydown', e=>{
+    if(state==='TITLE' && (e.code==='Enter'||e.code==='Space')) beginFromTitle(e);
+    if(state==='TITLE') return;
+    if(e.code==='ArrowLeft' || e.code==='KeyA') moveLane(-1);
+    else if(e.code==='ArrowRight' || e.code==='KeyD') moveLane(+1);
+    else if(e.code==='ArrowUp' || e.code==='Space') doJump();
+    else if(e.code==='ArrowDown' || e.code==='KeyS') doSlide();
+    else if(e.code==='KeyP') togglePause();
+    else if(e.code==='KeyR') restartGame();
+  });
+
+  let touchStart=null;
+  function touchStartHandler(e){
+    if(state==='TITLE') { beginFromTitle(e); return; }
+    const t = e.changedTouches[0];
+    touchStart = {x:t.clientX, y:t.clientY, t:performance.now()};
+  }
+  function touchEndHandler(e){
+    if(state==='TITLE') return;
+    const t = e.changedTouches[0]; if(!touchStart) return;
+    const dx = t.clientX - touchStart.x; const dy = t.clientY - touchStart.y;
+    const adx = Math.abs(dx), ady = Math.abs(dy); const SW = 24;
+    if(adx>ady && adx>SW){ moveLane(dx<0?-1:+1); }
+    else if(ady>adx && ady>SW){ if(dy<0) doJump(); else doSlide(); }
+    else{ doJump(); }
+    touchStart=null;
+  }
+  window.addEventListener('touchstart', touchStartHandler, {passive:false});
+  window.addEventListener('touchend', touchEndHandler, {passive:true});
+
+  // Soft keys
+  softLeft.onclick = ()=> moveLane(-1);
+  softRight.onclick = ()=> moveLane(+1);
+  softSlide.onclick = ()=> doSlide();
+  softJump.onclick = ()=> doJump();
+
+  // Buttons
+  btnMute.onclick = ()=>{}; // Mute toggled on begin
+  btnPause.onclick = ()=> togglePause();
+  btnRestart.onclick = ()=> restartGame();
+
+  function togglePause(){ if(state==='RUN'){ state='PAUSE'; showOverlay('ПАУЗА'); } else if(state==='PAUSE'){ hideOverlay(); state='RUN'; lastTime=performance.now(); } }
+
+  function beginFromTitle(e){
+    if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(_){} }
+    if(state!=='TITLE') return;
+    titleCard.style.display='none';
+    state='COUNTDOWN'; countdown=3; if(!sfx.enabled){ sfx.enable(); }
+    startCountdown();
+  }
+  startBtn.addEventListener('click', beginFromTitle, {passive:false});
+  startBtn.addEventListener('pointerdown', beginFromTitle, {passive:false});
+  startBtn.addEventListener('touchstart', beginFromTitle, {passive:false});
+
+  // SFX instance bound to begin
+  const sfx = { enable(){ SFX.enable(); btnMute.textContent='Звук: вкл'; } };
+
+  function startCountdown(){ state='COUNTDOWN'; countdown=3; nextTickCountdown(); }
+  function nextTickCountdown(){
+    overlay.style.display='flex'; overlayText.textContent = (countdown>0? String(countdown):'');
+    if(countdown<=0){ overlay.style.display='none'; resetLevel(); state='RUN'; lastTime=performance.now(); return; }
+    countdown--; setTimeout(nextTickCountdown, 720);
+  }
+
+  function resetLevel(){
+    obstacles.forEach(o=>scene.remove(o.mesh)); obstacles.length=0;
+    pickups.forEach(p=>scene.remove(p.mesh)); pickups.length=0;
+    spawnZ=-12; distance=0; speed=0.24*(1+levelIdx*0.04);
+    player.position.set(laneXFromIdx(1),0.5,0); playerLane=1; targetLane=1;
+    vy=0; onGround=true; canDouble=false; sliding=false; shieldMs=0; shield.visible=false;
+    scene.background = new THREE.Color(levelSkies[levelIdx]);
+    levelEl.textContent=(levelIdx+1); levelTag.textContent=['Склад РЦ','Магазин','Переговорка'][levelIdx];
+  }
+
+  const tmpBoxA = new THREE.Box3(), tmpBoxB = new THREE.Box3();
+  function collide(a,b){ tmpBoxA.setFromObject(a); tmpBoxB.setFromObject(b); return tmpBoxA.intersectsBox(tmpBoxB); }
+
+  let lastTime=performance.now();
+  function frame(now){
+    requestAnimationFrame(frame);
+    const dt = Math.min(40, now-lastTime); lastTime = now;
+    if(state==='RUN'){
+      // update
+      if(sliding && now>slideUntil) sliding=false;
+      distance += speed * dt; scene.position.z = distance;
+      if(-spawnZ + distance < 20) spawnWave();
+      for(const o of obstacles){ if(o.type==='cart'){ o.mesh.userData.phase += dt*0.006; o.mesh.position.y = 0.45 + Math.sin(o.mesh.userData.phase)*0.06; } }
+      vy += -0.0012 * dt; player.position.y += vy * dt;
+      if(player.position.y<=0.5){ player.position.y=0.5; vy=0; onGround=true; sliding=false; canDouble=false; }
+      player.position.x += (laneXFromIdx(playerLane) - player.position.x) * 0.25;
+      const targetCamZ=6.6, targetCamY=3.6;
+      camera.position.x += (player.position.x*0.25 - camera.position.x)*0.08;
+      camera.position.y += (targetCamY - camera.position.y)*0.08;
+      camera.position.z += (targetCamZ - camera.position.z)*0.08;
+      camera.lookAt(player.position.x,1.5,player.position.z-2);
+      for(let i=pickups.length-1;i>=0;i--){
+        const p=pickups[i];
+        if(collide(player,p.mesh)){
+          if(p.kind==='crumb'){ score += Math.floor(1*combo); combo=Math.min(8, combo+0.05); comboProg=Math.min(1, comboProg+0.18); comboDecay=1500; }
+          else if(p.kind==='bonus3'){ score += 5*Math.floor(combo); showToast('Допскидка +3%  •  +5','ok'); }
+          else if(p.kind==='prepak'){ shieldMs=7000; shield.visible=true; showToast('Препак — ЩИТ 7s','ok'); }
+          else if(p.kind==='erid'){ score += 10*Math.floor(combo); showToast('Без ERID  •  +10','ok'); }
+          scoreEl.textContent=score; scene.remove(p.mesh); pickups.splice(i,1);
+        }else if(p.mesh.position.z > (distance+10)){ scene.remove(p.mesh); pickups.splice(i,1); }
+      }
+      if(shieldMs>0){ shieldMs-=dt; if(shieldMs<=0){ shieldMs=0; shield.visible=false; } }
+      for(let i=0;i<obstacles.length;i++){
+        const o=obstacles[i];
+        if(collide(player,o.mesh)){
+          if(shieldMs>0){ shieldMs=0; shield.visible=false; showToast('Щит поглотил удар','ok'); scene.remove(o.mesh); obstacles.splice(i,1); break; }
+          else{
+            showToast('Столкновение — рестарт уровня','bad');
+            state='PAUSE'; showOverlay('☠');
+            setTimeout(()=>{ hideOverlay(); resetLevel(); state='RUN'; lastTime=performance.now(); }, 600);
+            combo=1; comboProg=0; comboDecay=0;
+            break;
+          }
+        }else if(o.mesh.position.z > (distance+10)){ scene.remove(o.mesh); obstacles.splice(i,1); i--; }
+      }
+      if(combo>1){ comboDecay-=dt; if(comboDecay<=0) combo = Math.max(1, combo - 0.02*dt/16); }
+      combofill.style.width = (((combo-1)/7)*100).toFixed(1)+'%';
+      combotxt.textContent = 'COMBO ×' + Math.max(1, Math.floor(combo));
+      if(distance > levelLengths[levelIdx]){
+        levelIdx++; if(levelIdx>=3){ gameWin(); return; }
+        else{ state='LEVEL_END'; setTimeout(()=>{ startCountdown(); }, 400); }
+      }
+    }
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(frame);
+
+  function gameWin(){
+    state='GAME_END';
+    if(score>best){ best=score; localStorage.setItem('mdz_best3d', String(best)); bestEl.textContent=best; }
+    overlay.style.display='flex';
+    const msg1='Год закрыт на 120% KPI', msg2='Developed by:\\nΛlєксαndr Rødіonσv & Λlєxєy BlІnσv █';
+    let j=0; (function type(){ overlayText.style.whiteSpace='pre-line'; overlayText.innerHTML = `<div style="font-weight:800; font-size:48px; margin-bottom:12px; color:#7dffb7;">${msg1}</div>`+
+    `<div style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#8be1ff; font-size:18px;">${msg2.slice(0,j)}<span style="background:#8be1ff; display:inline-block; width:10px; height:1em; vertical-align:-2px; animation: blink 1s steps(1) infinite;"></span></div>`;
+    if(j<msg2.length){ j++; setTimeout(type, 40+Math.random()*60); } })();
+    setTimeout(()=>{ window.addEventListener('keydown', restartOnce, {once:true}); window.addEventListener('touchstart', restartOnce, {once:true, passive:true}); }, 1200);
+    function restartOnce(){ restartGame(); }
+  }
+  function restartGame(){ overlay.style.display='none'; titleCard.style.display='none'; levelIdx=0; score=0; scoreEl.textContent=score; combo=1; comboProg=0; comboDecay=0; startCountdown(); }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden && state==='RUN') togglePause(); });
+  window.addEventListener('resize', ()=>{ renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1)); renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+  // set initial best
+  bestEl.textContent = best;
+}
 </script>
 </body>
 </html>
